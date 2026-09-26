@@ -58,7 +58,9 @@ def test_official_seed_counts_and_reported_weights(actual_seed, reported, access
     weights = Decimal(sec.decimal_sum(row["weight_pct"] for row in item["holdings"]))
     assert weights.quantize(Decimal("0.0001")) == Decimal(total)
     assert Decimal(103) < weights < Decimal(114)
-    assert sum(row["security_lending"]["is_cash_collateral"] is True for row in item["holdings"]) == 1
+    assert (
+        sum(row["security_lending"]["is_cash_collateral"] is True for row in item["holdings"]) == 1
+    )
     assert all(row["ticker"] == [] for row in item["holdings"])
     assert item["fiscal_year_end"].endswith("-03-31")
     assert manifest["identity"]["series_id"] == "S000004355"
@@ -85,10 +87,20 @@ def test_latest_seed_top_ten_match_unrounded_sec_facts(actual_seed):
     _, validated = actual_seed
     item = validated["all_filings"]["0002071691-26-019778"]
     top = sec.ranked_snapshot(item, "a" * 64)["top10"]
-    assert [row["weight_pct"] for row in top] == [
-        "10.371175712740", "8.072074228397", "7.704553749721", "7.284173247396",
-        "6.261257673112", "5.868089075690", "4.805820433672", "4.757717397859",
-        "3.914032737324", "3.871236258607",
+    assert [Decimal(row["weight_pct"]) for row in top] == [
+        Decimal(value)
+        for value in [
+            "10.371175712740",
+            "8.072074228397",
+            "7.704553749721",
+            "7.284173247396",
+            "6.261257673112",
+            "5.868089075690",
+            "4.805820433672",
+            "4.757717397859",
+            "3.914032737324",
+            "3.871236258607",
+        ]
     ]
     assert top[5]["title"] == "BlackRock Cash Funds: Institutional, SL Agency Shares"
     assert top[5]["security_lending"]["is_cash_collateral"] is True
