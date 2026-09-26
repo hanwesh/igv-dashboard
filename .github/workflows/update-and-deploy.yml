@@ -1,0 +1,185 @@
+name: Validate, refresh and deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 7 * * *"
+
+permissions: {}
+
+concurrency:
+  group: igv-dashboard-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Synthetic-only checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install declared dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Lint and synthetic unit/workflow checks
+        run: |
+          python -m ruff check .
+          python -m ruff format --check .
+          python -m pytest
+      - name: Install headless browser
+        run: python -m playwright install --with-deps chromium
+      - name: Synthetic native-UI smoke check
+        run: python -m tests.browser_smoke
+      - name: Report the publication boundary
+        if: always()
+        env:
+          APPROVAL: ${{ vars.DATA_PUBLICATION_APPROVED }}
+        run: |
+          {
+            echo '## Code-only checks'
+            echo 'Tests use independently generated, test-only fixtures; no financial requests or data artifacts.'
+            if [[ "$APPROVAL" != 'true' ]]; then
+              echo '**Live refresh, archive commits, failure issues and Pages are OFF.**'
+              echo 'DATA_PUBLICATION_APPROVED is not true. Source redistribution permission remains unresolved.'
+            else
+              echo 'Approval flag is true; mutation jobs still require this repository and trusted main context.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  refresh:
+    name: Authorized archive persistence
+    needs: checks
+    if: >-
+      github.repository == 'hanwesh/igv-dashboard' &&
+      github.ref == 'refs/heads/main' &&
+      contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) &&
+      vars.DATA_PUBLICATION_APPROVED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      DATA_PUBLICATION_APPROVED: ${{ vars.DATA_PUBLICATION_APPROVED }}
+    outputs:
+      data_sha: ${{ steps.persist.outputs.data_sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Fetch exact missing snapshots and coherent price window
+        run: python igv_snapshot.py refresh --allow-network
+      - name: Validate and build before persisting
+        run: |
+          python igv_snapshot.py validate
+          python igv_snapshot.py build
+      - name: Persist validated archive without overwriting concurrent work
+        id: persist
+        run: |
+          git add -- data/manifest.json data/objects
+          if ! git diff --cached --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m 'data: refresh verified monthly archive' \
+              -m 'Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>'
+            git push origin HEAD:main
+          fi
+          echo "data_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Authorized Pages deployment
+    needs: [checks, refresh]
+    if: >-
+      github.repository == 'hanwesh/igv-dashboard' &&
+      github.ref == 'refs/heads/main' &&
+      contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) &&
+      vars.DATA_PUBLICATION_APPROVED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      DATA_PUBLICATION_APPROVED: ${{ vars.DATA_PUBLICATION_APPROVED }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.refresh.outputs.data_sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Build only the persisted, complete production archive
+        run: python igv_snapshot.py build
+      - name: Refuse to deploy over a newer main revision
+        env:
+          EXPECTED_SHA: ${{ needs.refresh.outputs.data_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          actual=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq .object.sha)
+          if [[ "$actual" != "$EXPECTED_SHA" ]]; then
+            echo 'Main changed after data persistence; preserving the last-good site.' >&2
+            exit 1
+          fi
+      - name: Configure an already-enabled Pages site
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+        with:
+          enablement: false
+      - name: Upload the validated site only
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: site
+          retention-days: 1
+      - name: Deploy in this successful run, not on a bot-push trigger
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+  notify:
+    name: Authorized failure/recovery issue
+    needs: [checks, refresh, deploy]
+    if: >-
+      always() &&
+      github.repository == 'hanwesh/igv-dashboard' &&
+      github.ref == 'refs/heads/main' &&
+      contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) &&
+      vars.DATA_PUBLICATION_APPROVED == 'true' &&
+      (contains(needs.*.result, 'failure') || needs.deploy.result == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    env:
+      DATA_PUBLICATION_APPROVED: ${{ vars.DATA_PUBLICATION_APPROVED }}
+      GH_TOKEN: ${{ github.token }}
+      PIPELINE_RESULT: ${{ needs.deploy.result == 'success' && 'success' || 'failure' }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.13"
+      - name: Maintain one deduplicated incident issue
+        run: python .github/scripts/pipeline_issue.py

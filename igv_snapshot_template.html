@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>__IGV_TITLE__</title>
+  <style>
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #192d3a; background: #f4f6f7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 1640px; padding: 32px; margin: 0 auto; }
+    header { display: flex; flex-wrap: wrap; gap: 20px; justify-content: space-between; align-items: center; }
+    .eyebrow { color: #416572; font-size: 12px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+    h1 { font-size: clamp(26px, 3vw, 38px); margin: 8px 0; letter-spacing: -.035em; }
+    h2 { font-size: 19px; margin: 0; }
+    p { line-height: 1.6; margin: 8px 0; }
+    .subtle { color: #556875; font-size: 14px; }
+    a { color: #07635e; text-underline-offset: 3px; }
+    button, select, input, .download { font: inherit; }
+    button, select, input, .download { min-height: 40px; border: 1px solid #bacbd2; border-radius: 7px; background: #fff; color: #192d3a; padding: 8px 12px; }
+    button, .download { cursor: pointer; font-size: 13px; font-weight: 650; }
+    .download { display: inline-flex; align-items: center; text-decoration: none; }
+    button:hover, .download:hover { background: #e9f1f1; }
+    button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid #087e8b; outline-offset: 3px; }
+    .primary { background: #175b59; color: #fff; border-color: #175b59; }
+    .downloads { display: flex; flex-wrap: wrap; gap: 8px; }
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 24px 0; }
+    .stat { background: #fff; border: 1px solid #dce4e7; border-radius: 12px; padding: 18px; }
+    .stat strong { display: block; font-size: 26px; letter-spacing: -.02em; margin: 4px 0; font-variant-numeric: tabular-nums; }
+    .stat span { font-size: 12px; color: #556875; }
+    .panel { background: #fff; border: 1px solid #dce4e7; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 20px; border-bottom: 1px solid #e4eaed; }
+    .month-detail { padding: 20px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+    .holding-card { border: 1px solid #dce4e7; border-radius: 9px; padding: 12px; min-width: 0; overflow-wrap: anywhere; }
+    .holding-card .rank { font-size: 11px; font-weight: 700; color: #637984; }
+    .holding-card .ticker { font-size: 18px; font-weight: 750; margin-top: 6px; }
+    .holding-card .weight { font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; margin: 3px 0; }
+    .holding-card .name { font-size: 11px; color: #536672; line-height: 1.45; min-height: 32px; }
+    .bar { height: 4px; background: #ebf1f1; margin-top: 10px; border-radius: 4px; overflow: hidden; }
+    .bar span { display: block; height: 100%; background: #35837d; }
+    .month-note { padding: 0 20px 20px; font-size: 13px; color: #536672; }
+    .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; padding: 16px 20px; background: #f8fafb; }
+    label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 650; }
+    .controls input { width: 195px; }
+    #row-count { font-size: 12px; color: #556875; padding: 12px 0; margin-left: auto; }
+    .table-scroll { overflow: auto; max-height: 850px; }
+    table { width: 100%; min-width: 1180px; border-collapse: separate; border-spacing: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+    caption { text-align: left; padding: 13px 20px; font-size: 12px; color: #556875; }
+    th { position: sticky; top: 0; z-index: 2; text-align: left; background: #edf3f4; color: #49616d; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 12px 8px; border-bottom: 1px solid #ccd9de; white-space: nowrap; }
+    td { padding: 9px 8px; border-bottom: 1px solid #e8edef; height: 58px; }
+    tbody tr:nth-child(even) td { background-color: #fbfcfd; }
+    th:first-child, td:first-child { position: sticky; left: 0; min-width: 135px; z-index: 1; background: #fff; border-right: 1px solid #dce4e7; padding-left: 16px; }
+    th:first-child { z-index: 3; background: #edf3f4; }
+    td:last-child { font-weight: 750; color: #155b58; }
+    td .cell { border-radius: 5px; padding: 7px; min-width: 77px; background: rgb(37 130 120 / var(--tint)); }
+    td .symbol { font-weight: 750; display: block; letter-spacing: .015em; }
+    td .pct { color: #47626e; font-size: 11px; display: block; margin-top: 3px; }
+    td .cell.match { outline: 2px solid #936012; background: #fff0c9; }
+    .month-button { padding: 0; border: 0; min-height: 24px; background: transparent; font-weight: 750; color: #175b59; text-decoration: underline; text-underline-offset: 3px; }
+    .month-button:hover { background: transparent; color: #0b7770; }
+    .date { display: block; font-size: 10px; color: #677b86; margin-top: 4px; }
+    details { padding: 18px 20px; }
+    summary { cursor: pointer; font-weight: 700; }
+    details p { font-size: 13px; max-width: 1050px; }
+    footer { font-size: 12px; color: #617580; padding-bottom: 10px; }
+    .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 650; color: #235d58; }
+    .status::before { content: ""; width: 7px; height: 7px; background: #398c70; border-radius: 50%; }
+    .source-note { color: #7b530e; background: #fff7e2; border-radius: 6px; padding: 10px 12px; }
+    .test-banner { color: #84251e; background: #fff0eb; border: 2px solid #a6332b; padding: 14px; font-weight: 750; margin-bottom: 18px; }
+    .performance-head { align-items: flex-start; }
+    .market-price { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; margin-top: 10px; font-variant-numeric: tabular-nums; }
+    .market-price strong { font-size: 32px; letter-spacing: -.04em; }
+    .market-price span { font-size: 14px; font-weight: 700; }
+    .gain { color: #087b59; }
+    .loss { color: #c4434b; }
+    .chart-tools { display: flex; align-items: end; gap: 16px; flex-wrap: wrap; }
+    .range-buttons { display: flex; gap: 4px; }
+    .range-buttons button { min-width: 44px; }
+    .range-buttons button[aria-pressed="true"] { background: #175b59; border-color: #175b59; color: #fff; }
+    .chart-inspector { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 12px 20px; background: #f8fafb; border-bottom: 1px solid #e4eaed; font-size: 12px; font-variant-numeric: tabular-nums; min-height: 46px; align-items: center; }
+    .chart-inspector strong { color: #243e4b; }
+    .chart-inspector .label { color: #637984; margin-right: 4px; }
+    .chart-scroll { overflow-x: auto; }
+    #performance-chart { display: block; }
+    #performance-chart .grid-line { stroke: #e4ecef; stroke-width: 1; }
+    #performance-chart .zero-line { stroke: #9dafb7; stroke-width: 1.3; }
+    #performance-chart text { fill: #617580; font: 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    #performance-chart .price-hit { fill: transparent; }
+    #performance-chart .price-point { cursor: pointer; outline: none; }
+    #performance-chart .price-point:hover .price-hit,
+    #performance-chart .price-point:focus .price-hit { fill: rgb(37 113 145 / .09); }
+    #performance-chart .price-point[aria-pressed="true"] .price-hit { fill: rgb(37 113 145 / .13); }
+    #performance-chart .price-point:focus-visible .price-hit { stroke: #197b98; stroke-width: 1.5; }
+    #performance-chart .crosshair { stroke: #7e98a5; stroke-dasharray: 3 4; pointer-events: none; }
+    .chart-caption { display: flex; flex-wrap: wrap; gap: 10px 20px; padding: 8px 20px 16px; color: #556875; font-size: 12px; line-height: 1.5; }
+    .chart-caption .hint { margin-left: auto; }
+    .chart-note { padding: 0 20px 18px; margin: 0; font-size: 12px; color: #617580; }
+    .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+    noscript p { padding: 24px; background: #fff0c9; }
+    [hidden] { display: none !important; }
+    @media (max-width: 950px) { main { padding: 20px; } .month-detail { gap: 8px; } .holding-card { padding: 9px; } .holding-card .weight { font-size: 21px; } }
+    @media (max-width: 720px) { main { padding: 16px; } .stats { grid-template-columns: repeat(2, 1fr); } .month-detail { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stat { padding: 14px; } .stat strong { font-size: 24px; } .panel-head, .controls { padding: 16px; } #row-count { margin-left: 0; } }
+    @media print { body { background: #fff; } main { padding: 0; } .downloads, .controls, .month-detail, #detail-panel, .chart-tools { display: none; } .table-scroll { overflow: visible; max-height: none; } table { min-width: 0; font-size: 9px; } th, th:first-child, td:first-child { position: static; } td { padding: 3px; height: auto; } td .cell { min-width: 0; padding: 3px; } .panel { overflow: visible; } tr { break-inside: avoid; } #performance-chart { width: 100% !important; height: auto; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="test-banner" id="test-banner" __TEST_VISIBILITY__>SYNTHETIC TEST ONLY - independently generated fixtures, not real IGV holdings or market prices. Do not publish as investment data.</div>
+    <header>
+      <div>
+        <div class="eyebrow" id="archive-label"></div>
+        <h1>Performance &amp; monthly holdings</h1>
+        <p class="subtle" id="archive-period"></p>
+        <p class="subtle"><strong>Data through:</strong> <span id="data-through"></span><br><strong>Last successful data refresh:</strong> <span id="last-refresh"></span></p>
+      </div>
+      <div class="downloads">
+        <a class="download primary" id="download-wide" href="__CSV_WIDE__" download>Download monthly CSV</a>
+        <a class="download" id="download-long" href="__CSV_LONG__" download>Download 600-row CSV</a>
+      </div>
+    </header>
+    <p class="source-note" id="stale-warning" role="status" hidden></p>
+
+    <section class="panel" id="performance-panel" aria-labelledby="performance-heading" style="margin-top:24px">
+      <div class="panel-head performance-head">
+        <div>
+          <div class="eyebrow" id="market-label"></div>
+          <h2 id="performance-heading">Market performance</h2>
+          <div class="market-price"><strong id="latest-price"></strong><span id="range-return"></span></div>
+          <p class="subtle" id="price-period"></p>
+        </div>
+        <div class="chart-tools">
+          <label for="chart-view">Chart<select id="chart-view"><option value="returns">Monthly return bars</option><option value="ohlc">Price bars (OHLC)</option></select></label>
+          <div>
+            <div class="subtle" id="range-ending" style="font-size:12px;margin-bottom:5px"></div>
+            <div class="range-buttons" role="group" aria-label="Chart time range">
+              <button type="button" data-range="12" aria-pressed="false">1Y</button>
+              <button type="button" data-range="36" aria-pressed="false">3Y</button>
+              <button type="button" data-range="60" aria-pressed="true">5Y</button>
+            </div>
+          </div>
+          <a class="download" id="download-performance" href="__CSV_PERFORMANCE__" download>Price data CSV</a>
+        </div>
+      </div>
+      <div class="chart-inspector" id="chart-inspector" aria-live="polite"></div>
+      <div class="chart-scroll" id="chart-scroll"><svg id="performance-chart" role="group" aria-label="Monthly performance chart"></svg></div>
+      <div class="chart-caption">
+        <span id="chart-legend"></span>
+        <span>Lower bars: monthly volume</span>
+        <span class="hint">Hover or focus for details. Click a bar to select its holdings below.</span>
+      </div>
+      <p class="chart-note">Split-adjusted market prices; returns exclude cash distributions. Not live quotes. <a id="price-source" target="_blank" rel="noopener noreferrer"></a></p>
+    </section>
+    <section class="stats" aria-label="Archive summary">
+      <div class="stat"><span>Monthly coverage</span><strong id="coverage"></strong><span class="status" id="snapshot-status"></span></div>
+      <div class="stat"><span id="first-total-label"></span><strong id="first-total"></strong><span>Weight in the whole fund</span></div>
+      <div class="stat"><span id="last-total-label"></span><strong id="last-total"></strong><span>Weight in the whole fund</span></div>
+      <div class="stat"><span>Concentration change</span><strong id="total-change"></strong><span>Percentage points, first to last</span></div>
+    </section>
+    <section class="panel" id="detail-panel" aria-labelledby="detail-heading">
+      <div class="panel-head">
+        <div><h2 id="detail-heading">Selected monthly snapshot</h2><p class="subtle" id="selected-date"></p><p class="subtle" id="selected-price"></p></div>
+        <label for="month-select">Choose a month<select id="month-select"></select></label>
+      </div>
+      <div class="month-detail" id="month-detail"></div>
+      <div class="month-note" id="month-note"></div>
+    </section>
+    <section class="panel" aria-labelledby="grid-heading">
+      <div class="panel-head"><div><h2 id="grid-heading">Month by month</h2><p class="subtle">Ranked from largest to smallest. Each cell shows ticker and portfolio weight.</p></div></div>
+      <div class="controls">
+        <label for="year-select">Year<select id="year-select"><option value="">All years</option></select></label>
+        <label for="order-select">Order<select id="order-select"><option value="asc">Oldest first</option><option value="desc">Newest first</option></select></label>
+        <label for="ticker-search">Highlight ticker or company<input id="ticker-search" type="search" placeholder="Ticker or company name" autocomplete="off"></label>
+        <span id="row-count" role="status" aria-live="polite"></span>
+      </div>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable monthly holdings table">
+        <table id="monthly-table">
+          <caption>Click a month to inspect it above. Hover a holding for its historical company name. Scroll horizontally on small screens.</caption>
+          <thead><tr><th scope="col">Month / as of</th><th scope="col">#1</th><th scope="col">#2</th><th scope="col">#3</th><th scope="col">#4</th><th scope="col">#5</th><th scope="col">#6</th><th scope="col">#7</th><th scope="col">#8</th><th scope="col">#9</th><th scope="col">#10</th><th scope="col">Top 10 total</th></tr></thead>
+          <tbody id="monthly-body"></tbody>
+        </table>
+      </div>
+    </section>
+    <section class="panel">
+      <details open>
+        <summary>Sources and methodology</summary>
+        <p id="methodology"></p>
+        <p>Every response is checked against its requested exchange date and fund ID. All full-portfolio weight totals are checked before selecting the top ten. Cash and other asset classes are eligible for ranking. Displayed percentages are rounded to two decimals; exports retain unrounded numeric weights. No full-list allocation discrepancy is normalized away.</p>
+        <div id="source-notes"></div>
+        <p>Source: <a id="product-link" target="_blank" rel="noopener noreferrer"></a>. Each selected month links to its dated source. The three relative CSV downloads contain all 60 months regardless of the filters above, and work without JavaScript.</p>
+        <p id="price-methodology"></p>
+        <p id="exclusions">Historical portfolio data is not investment advice and does not measure purchases or sales: weights also change with prices, fund flows and corporate actions. Unfinished months are excluded.</p>
+      </details>
+    </section>
+    <footer id="footer"></footer>
+    <noscript><p>The interactive view needs JavaScript. The three CSV links above contain the same data. Check the file dates before relying on a static archive; freshness cannot be checked without JavaScript.</p></noscript>
+  </main>
+  <script id="igv-data" type="application/json">__IGV_DATA__</script>
+  <script>
+    "use strict";
+    const report = JSON.parse(document.getElementById("igv-data").textContent);
+    const snapshots = report.snapshots;
+    const byMonth = new Map(snapshots.map(item => [item.month, item]));
+    const prices = report.performance.series;
+    const priceByMonth = new Map(prices.map(item => [item.month, item]));
+    const byId = id => document.getElementById(id);
+    const pct = number => number.toFixed(2) + "%";
+    const signedPct = number => (number > 0 ? "+" : "") + pct(number);
+    const usd = number => "$" + number.toFixed(2);
+    const monthLabel = month => new Date(month + "-01T12:00:00Z").toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" });
+    const dateLabel = date => new Date(date + "T12:00:00Z").toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+    const make = (tag, className, text) => {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    };
+    const synthetic = report.data_kind === "synthetic-test-only";
+    byId("test-banner").hidden = !synthetic;
+    byId("archive-label").textContent = report.ticker + " / Portfolio archive";
+    byId("market-label").textContent = report.ticker + " / USD / Monthly";
+    byId("archive-period").textContent = report.fund_name + " / " + monthLabel(report.period_start) + " - " + monthLabel(report.period_end) + " / 60 completed months";
+    byId("data-through").textContent = monthLabel(report.data_through);
+    byId("last-refresh").textContent = report.last_successful_data_refresh_utc.replace("T", " ").replace("Z", " UTC");
+    byId("range-ending").textContent = "Range ending " + monthLabel(report.period_end);
+    byId("snapshot-status").textContent = synthetic ? "Synthetic test snapshots" : "Verified dated snapshots";
+    const first = snapshots[0], last = snapshots[snapshots.length - 1];
+    const change = last.top10_weight_pct - first.top10_weight_pct;
+    byId("coverage").textContent = snapshots.length + " / 60";
+    byId("first-total-label").textContent = "Top 10 / " + monthLabel(first.month);
+    byId("last-total-label").textContent = "Top 10 / " + monthLabel(last.month);
+    byId("first-total").textContent = pct(first.top10_weight_pct);
+    byId("last-total").textContent = pct(last.top10_weight_pct);
+    byId("total-change").textContent = (change >= 0 ? "+" : "") + change.toFixed(2) + " pp";
+    byId("methodology").textContent = report.methodology;
+    byId("product-link").href = report.product_url;
+    byId("product-link").textContent = synthetic ? "Synthetic test generator (not a provider)" : "iShares / BlackRock official IGV holdings";
+    byId("price-source").href = report.performance.history_url;
+    byId("price-source").textContent = "Source: " + report.performance.source_name;
+    byId("price-methodology").textContent = "Performance chart: " + report.performance.methodology;
+    byId("footer").textContent = "60 dated snapshots / 600 ranked records / no estimated months. Provenance uses source dates, retrieval UTC and SHA256, not checkout time." + (synthetic ? " SYNTHETIC TEST ONLY." : "");
+    for (const item of snapshots) {
+      for (const note of item.quality_notes) byId("source-notes").append(make("p", "source-note", monthLabel(item.month) + ": " + note));
+    }
+    function updateFreshness() {
+      const parts = new Intl.DateTimeFormat("en-US", { year: "numeric", month: "2-digit", timeZone: "America/New_York" }).formatToParts(new Date());
+      let year = Number(parts.find(part => part.type === "year").value);
+      let month = Number(parts.find(part => part.type === "month").value) - 1;
+      if (month === 0) { year -= 1; month = 12; }
+      const latest = year + "-" + String(month).padStart(2, "0");
+      const warning = byId("stale-warning");
+      warning.hidden = report.data_through >= latest;
+      warning.textContent = "Stale archive: data through " + monthLabel(report.data_through) + "; latest completed month is " + monthLabel(latest) + ". No missing month has been estimated. Refresh/publication may be paused or awaiting authorized source data.";
+    }
+    updateFreshness();
+    setInterval(updateFreshness, 60000);
+    document.addEventListener("visibilitychange", updateFreshness);
+    for (const item of [...snapshots].reverse()) {
+      const option = make("option", "", monthLabel(item.month));
+      option.value = item.month;
+      byId("month-select").append(option);
+    }
+    for (const year of [...new Set(snapshots.map(item => item.month.slice(0, 4)))]) {
+      const option = make("option", "", year);
+      option.value = year;
+      byId("year-select").append(option);
+    }
+    let chartRange = 60;
+    let selectedPriceMonth = last.month;
+    let chartWidth = 0;
+    const green = "#169477", red = "#db5b64", neutral = "#80939c";
+    const pointColor = number => number > 0 ? green : number < 0 ? red : neutral;
+    const svgNode = (tag, attributes, text) => {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+      for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, String(value));
+      if (text !== undefined) node.textContent = text;
+      return node;
+    };
+    function inspectPrice(row) {
+      const inspector = byId("chart-inspector");
+      inspector.replaceChildren(make("strong", "", monthLabel(row.month)));
+      for (const [label, value] of [["O", usd(row.open)], ["H", usd(row.high)], ["L", usd(row.low)], ["C", usd(row.close)], ["Month", signedPct(row.monthly_return_pct)], ["Vol", (row.volume / 1e6).toFixed(2) + "M"]]) {
+        const field = make("span", label === "Month" ? (row.monthly_return_pct >= 0 ? "gain" : "loss") : "");
+        field.append(make("span", "label", label), value);
+        inspector.append(field);
+      }
+      const point = byId("performance-chart").querySelector(`[data-price-month="${row.month}"]`);
+      const crosshair = byId("price-crosshair");
+      if (crosshair) {
+        crosshair.style.display = point ? "" : "none";
+        if (point) {
+          crosshair.setAttribute("x1", point.dataset.x);
+          crosshair.setAttribute("x2", point.dataset.x);
+        }
+      }
+    }
+    function selectPriceMonth(month) {
+      selectedPriceMonth = month;
+      const points = [...byId("performance-chart").querySelectorAll("[data-price-month]")];
+      for (const point of points) {
+        const selected = point.dataset.priceMonth === month;
+        point.setAttribute("aria-pressed", String(selected));
+        point.setAttribute("tabindex", selected ? "0" : "-1");
+      }
+      if (!points.some(point => point.getAttribute("tabindex") === "0")) points.at(-1)?.setAttribute("tabindex", "0");
+      inspectPrice(priceByMonth.get(month));
+    }
+    function renderPerformance() {
+      const visible = prices.slice(-chartRange);
+      const mode = byId("chart-view").value;
+      const firstPrice = visible[0], lastPrice = visible.at(-1);
+      const rangeReturn = (lastPrice.close / firstPrice.previous_close - 1) * 100;
+      byId("latest-price").textContent = usd(lastPrice.close);
+      byId("range-return").textContent = signedPct(rangeReturn) + " / " + chartRange / 12 + "Y price return";
+      byId("range-return").className = rangeReturn >= 0 ? "gain" : "loss";
+      byId("price-period").textContent = "Close " + dateLabel(lastPrice.date) + " / " + monthLabel(firstPrice.month) + " - " + monthLabel(lastPrice.month);
+      for (const button of document.querySelectorAll("[data-range]")) button.setAttribute("aria-pressed", String(Number(button.dataset.range) === chartRange));
+      const legend = byId("chart-legend");
+      legend.replaceChildren();
+      for (const [color, label] of [[green, mode === "returns" ? "+ Gain" : "Close above open"], [red, mode === "returns" ? "- Loss" : "Close below open"]]) {
+        const swatch = make("span", "swatch");
+        swatch.style.background = color;
+        legend.append(swatch, label + "   ");
+      }
+      const svg = byId("performance-chart");
+      svg.replaceChildren();
+      chartWidth = Math.max(680, byId("chart-scroll").clientWidth);
+      const width = chartWidth, height = 405;
+      const left = 22, right = width - 77, top = 30, bottom = 278, volumeTop = 318, volumeBottom = 363;
+      const stepX = (right - left) / visible.length;
+      const xAt = index => left + stepX * (index + 0.5);
+      let minimum = mode === "returns" ? Math.min(0, ...visible.map(row => row.monthly_return_pct)) : Math.min(...visible.map(row => row.low));
+      let maximum = mode === "returns" ? Math.max(0, ...visible.map(row => row.monthly_return_pct)) : Math.max(...visible.map(row => row.high));
+      const rawStep = Math.max((maximum - minimum) / 5, 0.001);
+      const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+      const scaled = rawStep / magnitude;
+      const stepY = (scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10) * magnitude;
+      minimum = Math.floor(minimum / stepY) * stepY;
+      maximum = Math.ceil(maximum / stepY) * stepY;
+      if (maximum === minimum) maximum += stepY;
+      const yAt = value => bottom - (value - minimum) / (maximum - minimum) * (bottom - top);
+      svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+      svg.setAttribute("width", String(width));
+      svg.setAttribute("height", String(height));
+      svg.setAttribute("aria-label", `${report.ticker} ${mode === "returns" ? "monthly return" : "monthly OHLC price"} bars, ${visible.length} months. Use arrow keys to move between bars and Enter or Space to select holdings.`);
+      svg.append(svgNode("title", {}, report.ticker + " monthly market performance"));
+      svg.append(svgNode("desc", {}, "Monthly bars aligned with the holdings snapshots. Returns compare consecutive month-end prices and exclude cash distributions."));
+      for (let value = minimum; value <= maximum + stepY / 100; value += stepY) {
+        const y = yAt(value);
+        svg.append(svgNode("line", { x1: left, x2: right, y1: y, y2: y, class: mode === "returns" && Math.abs(value) < 0.00001 ? "zero-line" : "grid-line" }));
+        svg.append(svgNode("text", { x: right + 10, y: y + 4 }, mode === "returns" ? value.toFixed(0) + "%" : usd(value)));
+      }
+      svg.append(svgNode("text", { x: left, y: 16 }, mode === "returns" ? "Monthly price return (%)" : "Monthly OHLC / USD"));
+      svg.append(svgNode("text", { x: left, y: volumeTop - 9 }, "Volume"));
+      const maxVolume = Math.max(...visible.map(row => row.volume), 1);
+      svg.append(svgNode("text", { x: right + 10, y: volumeTop + 4 }, (maxVolume / 1e6).toFixed(0) + "M"));
+      svg.append(svgNode("line", { x1: left, x2: right, y1: volumeBottom, y2: volumeBottom, class: "grid-line" }));
+      svg.append(svgNode("line", { id: "price-crosshair", x1: 0, x2: 0, y1: top, y2: volumeBottom, class: "crosshair" }));
+      visible.forEach((row, index) => {
+        const x = xAt(index);
+        const color = pointColor(mode === "returns" ? row.monthly_return_pct : row.close - row.open);
+        const barWidth = Math.max(3, Math.min(30, stepX * 0.68));
+        const point = svgNode("g", { class: "price-point", role: "button", tabindex: row.month === selectedPriceMonth ? "0" : "-1", "aria-pressed": String(row.month === selectedPriceMonth), "data-price-month": row.month, "data-x": x, "aria-label": `${monthLabel(row.month)}, close ${usd(row.close)}, monthly return ${signedPct(row.monthly_return_pct)}. Select holdings.` });
+        point.append(svgNode("title", {}, `${monthLabel(row.month)} | O ${usd(row.open)} H ${usd(row.high)} L ${usd(row.low)} C ${usd(row.close)} | Return ${signedPct(row.monthly_return_pct)}`));
+        point.append(svgNode("rect", { x: x - stepX / 2, y: top, width: stepX, height: volumeBottom - top, class: "price-hit" }));
+        if (mode === "returns") {
+          const y = yAt(row.monthly_return_pct), zero = yAt(0);
+          point.append(svgNode("rect", { x: x - barWidth / 2, y: Math.min(y, zero), width: barWidth, height: Math.max(1, Math.abs(y - zero)), rx: 1.5, fill: color, class: "return-bar", "data-return": row.monthly_return_pct }));
+        } else {
+          point.append(svgNode("path", { d: `M ${x} ${yAt(row.high)} V ${yAt(row.low)} M ${x - barWidth / 2} ${yAt(row.open)} H ${x} M ${x} ${yAt(row.close)} H ${x + barWidth / 2}`, stroke: color, "stroke-width": 2, fill: "none", class: "ohlc-bar" }));
+        }
+        const volumeHeight = row.volume / maxVolume * (volumeBottom - volumeTop);
+        point.append(svgNode("rect", { x: x - barWidth / 2, y: volumeBottom - volumeHeight, width: barWidth, height: volumeHeight, fill: color, opacity: 0.4, class: "volume-bar" }));
+        point.addEventListener("pointerenter", () => inspectPrice(row));
+        point.addEventListener("focus", () => inspectPrice(row));
+        point.addEventListener("click", () => renderMonth(row.month));
+        point.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            renderMonth(row.month);
+          } else if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+            event.preventDefault();
+            const nextIndex = event.key === "Home" ? 0 : event.key === "End" ? visible.length - 1 : Math.max(0, Math.min(visible.length - 1, index + (event.key === "ArrowRight" ? 1 : -1)));
+            svg.querySelector(`[data-price-month="${visible[nextIndex].month}"]`).focus();
+          }
+        });
+        svg.append(point);
+        const labelEvery = visible.length <= 12 ? 1 : visible.length <= 36 ? 3 : 6;
+        if (index % labelEvery === 0) svg.append(svgNode("text", { x, y: 387, "text-anchor": "middle" }, monthLabel(row.month)));
+      });
+      if (!svg.querySelector('[tabindex="0"]')) svg.querySelectorAll(".price-point")[visible.length - 1].setAttribute("tabindex", "0");
+      inspectPrice(priceByMonth.get(selectedPriceMonth));
+    }
+    function renderMonth(month) {
+      const item = byMonth.get(month);
+      if (!item) throw new Error("Unknown snapshot month: " + month);
+      byId("month-select").value = month;
+      byId("selected-date").textContent = monthLabel(month) + " / as of " + dateLabel(item.snapshot_date);
+      const price = priceByMonth.get(month);
+      byId("selected-price").textContent = report.ticker + " close " + usd(price.close) + " / monthly price return " + signedPct(price.monthly_return_pct);
+      selectPriceMonth(month);
+      byId("month-detail").replaceChildren();
+      const largest = item.top10[0].weight_pct;
+      for (const row of item.top10) {
+        const card = make("article", "holding-card");
+        card.append(make("div", "rank", "#" + row.rank), make("div", "ticker", row.ticker), make("div", "weight", pct(row.weight_pct)), make("div", "name", row.name));
+        const bar = make("div", "bar");
+        bar.setAttribute("aria-hidden", "true");
+        const fill = make("span");
+        fill.style.width = (row.weight_pct / largest * 100) + "%";
+        bar.append(fill);
+        card.append(bar);
+        byId("month-detail").append(card);
+      }
+      const note = byId("month-note");
+      note.replaceChildren(make("strong", "", "Top 10: " + pct(item.top10_weight_pct) + " of the fund."));
+      note.append(" Ranked from " + item.holding_count + " reported portfolio positions. ");
+      const source = make("a", "", synthetic ? "Synthetic test source (not live)" : "Open this month's dated source");
+      source.href = item.source_url;
+      source.target = "_blank";
+      source.rel = "noopener noreferrer";
+      note.append(source);
+      note.append(make("p", "", "Source as of " + item.snapshot_date + "; retrieved " + item.retrieved_at_utc + ". SHA256 " + item.source_sha256.slice(0, 16) + "..."));
+      for (const warning of item.quality_notes) note.append(make("p", "source-note", warning));
+    }
+    function renderGrid() {
+      const year = byId("year-select").value;
+      const search = byId("ticker-search").value.trim().toUpperCase();
+      let visible = snapshots.filter(item => !year || item.month.startsWith(year));
+      if (byId("order-select").value === "desc") visible = [...visible].reverse();
+      const body = byId("monthly-body");
+      body.replaceChildren();
+      let matchingMonths = 0;
+      for (const item of visible) {
+        const tr = make("tr");
+        tr.dataset.month = item.month;
+        const monthCell = make("td");
+        const button = make("button", "month-button", monthLabel(item.month));
+        button.type = "button";
+        button.setAttribute("aria-label", "Inspect " + monthLabel(item.month) + " holdings");
+        button.addEventListener("click", () => {
+          renderMonth(item.month);
+          byId("detail-panel").scrollIntoView({ behavior: "auto", block: "start" });
+          byId("month-select").focus({ preventScroll: true });
+        });
+        monthCell.append(button, make("span", "date", item.snapshot_date));
+        tr.append(monthCell);
+        let hasMatch = false;
+        for (const row of item.top10) {
+          const td = make("td");
+          const matches = Boolean(search && (row.ticker.toUpperCase().includes(search) || row.name.toUpperCase().includes(search)));
+          hasMatch = hasMatch || matches;
+          const cell = make("div", "cell" + (matches ? " match" : ""));
+          cell.style.setProperty("--tint", String(0.035 + Math.min(row.weight_pct / 12, 1) * 0.14));
+          cell.title = row.name + " | " + row.weight_pct.toFixed(5) + "% | " + item.snapshot_date;
+          cell.append(make("span", "symbol", row.ticker), make("span", "pct", pct(row.weight_pct)));
+          td.append(cell);
+          tr.append(td);
+        }
+        if (hasMatch) matchingMonths += 1;
+        tr.append(make("td", "", pct(item.top10_weight_pct)));
+        body.append(tr);
+      }
+      byId("row-count").textContent = visible.length + " months shown" + (search ? " / highlighted in " + matchingMonths + " months" : " / 10 holdings per month");
+    }
+    byId("month-select").addEventListener("change", event => renderMonth(event.target.value));
+    byId("year-select").addEventListener("change", renderGrid);
+    byId("order-select").addEventListener("change", renderGrid);
+    byId("ticker-search").addEventListener("input", renderGrid);
+    byId("chart-view").addEventListener("change", renderPerformance);
+    for (const button of document.querySelectorAll("[data-range]")) button.addEventListener("click", () => {
+      chartRange = Number(button.dataset.range);
+      renderPerformance();
+    });
+    byId("chart-scroll").addEventListener("pointerleave", () => inspectPrice(priceByMonth.get(selectedPriceMonth)));
+    new ResizeObserver(() => {
+      if (Math.max(680, byId("chart-scroll").clientWidth) !== chartWidth) renderPerformance();
+    }).observe(byId("chart-scroll"));
+    renderPerformance();
+    renderMonth(last.month);
+    renderGrid();
+  </script>
+</body>
+</html>
