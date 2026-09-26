@@ -6,6 +6,7 @@ import pytest
 import yaml
 
 import igv_snapshot as app
+import sec_nport as sec
 
 WORKFLOW = app.ROOT / ".github/workflows/update-and-deploy.yml"
 SPEC = importlib.util.spec_from_file_location(
@@ -27,15 +28,15 @@ def test_live_context_gate_matrix(event, ref, approval):
         and event in {"push", "schedule", "workflow_dispatch"}
     )
     env = {
-        "DATA_PUBLICATION_APPROVED": approval,
+        "SEC_PUBLICATION_APPROVED": approval,
         "GITHUB_ACTIONS": "true",
         "GITHUB_EVENT_NAME": event,
         "GITHUB_REF": ref,
-        "GITHUB_REPOSITORY": app.REPOSITORY,
+        "GITHUB_REPOSITORY": sec.REPOSITORY,
     }
-    assert app.publication_allowed(env) == allowed
+    assert sec.publication_allowed(env) == allowed
     env["GITHUB_REPOSITORY"] = "untrusted/fork"
-    assert not app.publication_allowed(env)
+    assert not sec.publication_allowed(env)
 
 
 def test_workflow_scope_and_off_gate():
@@ -47,7 +48,7 @@ def test_workflow_scope_and_off_gate():
     assert workflow["permissions"] == {}
     assert workflow["concurrency"]["cancel-in-progress"] == "false"
     jobs = workflow["jobs"]
-    assert set(jobs) == {"checks", "refresh", "deploy", "notify"}
+    assert set(jobs) == {"checks", "refresh", "deploy", "notify", "sec-access-diagnostic"}
     assert jobs["checks"]["permissions"] == {"contents": "read"}
     assert "allow-network" not in json.dumps(jobs["checks"])
     assert "upload" not in json.dumps(jobs["checks"])
@@ -57,7 +58,8 @@ def test_workflow_scope_and_off_gate():
         assert "github.repository == 'hanwesh/igv-dashboard'" in condition
         assert "github.ref == 'refs/heads/main'" in condition
         assert '["push","schedule","workflow_dispatch"]' in condition
-        assert "vars.DATA_PUBLICATION_APPROVED == 'true'" in condition
+        assert "vars.SEC_PUBLICATION_APPROVED == 'true'" in condition
+        assert "inputs.sec_access_diagnostic != true" in condition
     assert jobs["refresh"]["permissions"] == {"contents": "write"}
     assert jobs["refresh"]["steps"][0]["with"]["ref"] == "${{ github.sha }}"
     assert jobs["deploy"]["permissions"] == {
@@ -77,16 +79,85 @@ def test_workflow_scope_and_off_gate():
             assert step["with"]["path"] == "site"
     assert "git push origin HEAD:main" in text
     assert "--force" not in text and "pull_request_target" not in text
-    assert "secrets." not in text
+    assert text.count("secrets.") == 1
+    assert "SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}" in text
+    assert "secrets.SEC_USER_AGENT" not in json.dumps(jobs["checks"])
+    assert "secrets.SEC_USER_AGENT" not in json.dumps(jobs["deploy"])
     assert "github.token" in text
     assert "Co-authored-by: Copilot App" in text
+    refresh_steps = json.dumps(jobs["refresh"]["steps"])
+    assert refresh_steps.index("validate --allow-stale") < refresh_steps.index(
+        "refresh --allow-network"
+    )
+    assert "bootstrap" not in refresh_steps
+    assert "data/manifest.json data/objects" in refresh_steps
+    assert "git add ." not in text
+
+
+def test_diagnostic_is_default_off_read_only_and_mutually_exclusive_with_publication():
+    workflow = yaml.load(WORKFLOW.read_text(), Loader=yaml.BaseLoader)
+    control = workflow["on"]["workflow_dispatch"]["inputs"]["sec_access_diagnostic"]
+    assert control == {
+        "description": (
+            "One read-only SEC metadata access diagnostic; disables ALL write/deploy jobs"
+        ),
+        "type": "boolean",
+        "required": "false",
+        "default": "false",
+    }
+    jobs = workflow["jobs"]
+    job = jobs["sec-access-diagnostic"]
+    assert job["permissions"] == {"contents": "read"}
+    assert "github.event_name == 'workflow_dispatch'" in job["if"]
+    assert "inputs.sec_access_diagnostic == true" in job["if"]
+    assert job["steps"][0]["with"]["persist-credentials"] == "false"
+    text = json.dumps(job)
+    assert "secrets." not in text and "upload" not in text and "artifact" not in text
+    assert "git push" not in text and "SEC_PUBLICATION_APPROVED" not in text
+    for name in ("checks", "refresh", "deploy", "notify"):
+        assert "inputs.sec_access_diagnostic != true" in jobs[name]["if"]
 
 
 def test_data_placeholder_has_no_dataset():
     schema = json.loads((app.ROOT / "data/schema.json").read_text())
-    assert schema["title"].endswith("SCHEMA ONLY, NO MARKET DATA")
-    assert "holdings" in schema["required"]
-    assert "source_url" in schema["$defs"]["source"]["required"]
+    assert "SCHEMA ONLY" in schema["description"]
+    assert set(schema["required"]) == app.MANIFEST_KEYS
+    assert set(schema["$defs"]["provenance"]["required"]) == sec.PROVENANCE_KEYS
+    assert set(schema["$defs"]["holding"]["required"]) == sec.ROW_KEYS
+    assert set(schema["$defs"]["normalized_filing"]["required"]) == sec.SNAPSHOT_KEYS
+    assert set(schema["$defs"]["identity"]["required"]) == sec.IDENTITY_KEYS
+
+
+def test_legacy_approval_and_provider_code_cannot_authorize_new_source(monkeypatch):
+    assert not sec.publication_allowed({"DATA_PUBLICATION_APPROVED": "true"})
+    code = (app.ROOT / "igv_snapshot.py").read_text() + (app.ROOT / "sec_nport.py").read_text()
+    for obsolete in [
+        "query1.finance.yahoo.com",
+        "www.blackrock.com",
+        "www.ishares.com",
+        "exchange_calendars",
+        "parse_prices",
+        "trading_days",
+        "PRICE_API",
+    ]:
+        assert obsolete not in code
+    monkeypatch.setenv("DATA_PUBLICATION_APPROVED", "true")
+    with pytest.raises(SystemExit, match="BLOCKED"):
+        issues.main()
+
+
+def test_actions_cannot_bootstrap_even_on_gated_main(tmp_path, monkeypatch):
+    for key, value in {
+        "SEC_PUBLICATION_APPROVED": "true",
+        "GITHUB_ACTIONS": "true",
+        "GITHUB_REPOSITORY": sec.REPOSITORY,
+        "GITHUB_REF": "refs/heads/main",
+        "GITHUB_EVENT_NAME": "workflow_dispatch",
+    }.items():
+        monkeypatch.setenv(key, value)
+    assert app.main(["bootstrap", "--allow-network", "--data-dir", str(tmp_path)]) == 2
+    with pytest.raises(sec.BlockedError, match="cannot bootstrap"):
+        app.refresh_archive(tmp_path, lambda _: pytest.fail("no network"), bootstrap=True)
 
 
 def incident(number=7, state="open"):

@@ -1,13 +1,13 @@
-"""Maintain only the authorized pipeline's own incident issue; no source data in issues."""
+"""Maintain only the SEC-only pipeline's incident issue; no source records or contact in issues."""
 
 import json
 import os
 import subprocess
 import sys
 
-MARKER = "<!-- igv-dashboard:authorized-pipeline -->"
+MARKER = "<!-- igv-dashboard:sec-nport-pipeline -->"
 REPOSITORY = "hanwesh/igv-dashboard"
-TITLE = "[automation] Authorized IGV refresh/publication failure"
+TITLE = "[automation] SEC quarterly IGV refresh/publication failure"
 
 
 def desired_issue(issues: list[dict], result: str, run_url: str) -> tuple[int | None, dict] | None:
@@ -25,23 +25,26 @@ def desired_issue(issues: list[dict], result: str, run_url: str) -> tuple[int | 
         if existing is None or existing["state"] == "closed":
             return None
         body = (
-            f"{MARKER}\n\nRecovered: the authorized archive and Pages deployment succeeded.\n\n"
+            f"{MARKER}\n\nRecovered: the SEC factual archive and Pages deployment succeeded.\n\n"
             f"Successful run: {run_url}\n\nNo source records are included in this issue."
         )
         return existing["number"], {"body": body, "state": "closed", "state_reason": "completed"}
     if result != "failure":
         raise ValueError("Unknown pipeline outcome")
     body = (
-        f"{MARKER}\n\nThe authorized pipeline failed. Any last-good deployed site remains in "
+        f"{MARKER}\n\nThe SEC-only pipeline failed. Any last-good deployed site remains in "
         "place unless the deployment itself was externally changed. No partial response "
         "replaces the active archive.\n\n"
         f"Latest failed run: {run_url}\n\n"
-        "Inspect the failed step. Delayed dated holdings should be retried on the next schedule "
-        "or by manual dispatch; never substitute a latest-date response. Fix source, calendar, "
-        "permission or concurrent-main errors before retrying. Setting "
-        "`DATA_PUBLICATION_APPROVED=false` pauses future live jobs.\n\n"
+        "Inspect the failed step. An absent audited SEC seed blocks all production output. "
+        "Respect SEC access denials and Retry-After; do not change identity or use another "
+        "provider. Check exact series, fiscal reporting dates, filing lag, amendments, "
+        "schema/provenance and concurrent-main failures before retrying. Keep operator contact "
+        "in the SEC_USER_AGENT secret, never in an issue. Setting "
+        "`SEC_PUBLICATION_APPROVED=false` pauses future SEC live jobs. "
+        "The unrelated legacy `DATA_PUBLICATION_APPROVED` must remain false.\n\n"
         "This single issue is updated on failure, reopened if needed, and closed only after a "
-        "successful authorized deployment. No source records are included."
+        "successful SEC-only deployment. No source records are included."
     )
     fields = {"title": TITLE, "body": body, "state": "open"}
     if existing is not None and all(existing.get(key) == value for key, value in fields.items()):
@@ -67,7 +70,7 @@ def api(endpoint: str, *, method: str = "GET", fields: dict | None = None):
 
 def main() -> None:
     if not (
-        os.environ.get("DATA_PUBLICATION_APPROVED") == "true"
+        os.environ.get("SEC_PUBLICATION_APPROVED") == "true"
         and os.environ.get("GITHUB_ACTIONS") == "true"
         and os.environ.get("GITHUB_REPOSITORY") == REPOSITORY
         and os.environ.get("GITHUB_REF") == "refs/heads/main"
