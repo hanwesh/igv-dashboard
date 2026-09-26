@@ -369,6 +369,12 @@ def report_payload(manifest: dict, validated: dict) -> dict:
         "retained_quarters": validated["quarter_count"],
         "retained_filings": len(validated["all_filings"]),
         "snapshots": snapshots,
+        "identifier_note": (
+            "These SEC N-PORT filings supply no exchange tickers. Positions are identified "
+            "by security title, issuer name, CUSIP and available ISIN; no tickers are inferred."
+            if all(item["identifier_note"] for item in snapshots)
+            else "Historical identifiers are shown as reported; missing tickers are not inferred."
+        ),
         "methodology": (
             "The latest 20 consecutive reported fiscal-quarter-end portfolios, not calendar "
             "quarters or monthly estimates. Dates are N-PORT A.3(b) (repPdDate); A.3(a) "
@@ -472,8 +478,11 @@ def export_csvs(report: dict) -> dict[str, str]:
                 **{key: decimal(row[key]) for key in ("weight_pct", "market_value_usd", "balance")},
                 **{
                     key: (
-                        decimal(value) if key.endswith("_usd") and value is not None
-                        else str(value).lower() if isinstance(value, bool) else value
+                        decimal(value)
+                        if key.endswith("_usd") and value is not None
+                        else str(value).lower()
+                        if isinstance(value, bool)
+                        else value
                     )
                     for key, value in row["security_lending"].items()
                 },
@@ -516,14 +525,18 @@ def static_table(report: dict) -> str:
             category = (
                 "Securities-lending collateral"
                 if holding["security_lending"]["is_cash_collateral"] is True
-                else "Cash-management vehicle" if holding["asset_category"] == "STIV" else ""
+                else "Cash-management vehicle"
+                if holding["asset_category"] == "STIV"
+                else ""
             )
             identifiers = html.escape(
                 " / ".join(filter(None, [holding["cusip"], *holding["isin"]])), quote=True
             )
             cells.append(
                 f'<td><div class="cell" title="{name} / {identifiers}"><span class="symbol">'
-                f'{html.escape(identifier)}</span><span class="holding-name">{name}</span>'
+                f'{name}</span><span class="holding-name">{html.escape(identifier)}</span>'
+                '<span class="holding-name">CUSIP: '
+                f"{html.escape(holding['cusip'] or 'not reported')}</span>"
                 f'<span class="category">{category}</span>'
                 f'<span class="pct">{decimal(holding["weight_pct"]):.2f}%</span></div></td>'
             )
@@ -570,6 +583,7 @@ def build_site(
         "__PERIOD__": f"{report['period_start']} - {report['period_end']}",
         "__DATA_THROUGH__": report["data_through"],
         "__LAST_REFRESH__": report["last_successful_data_refresh_utc"],
+        "__IDENTIFIER_NOTE__": html.escape(report["identifier_note"]),
         "__STATIC_TABLE__": static_table(report),
         **{f"__CSV_{key.upper()}__": value for key, value in report["downloads"].items()},
     }

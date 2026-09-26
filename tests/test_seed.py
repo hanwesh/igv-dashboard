@@ -109,3 +109,11 @@ def test_latest_seed_top_ten_match_unrounded_sec_facts(actual_seed):
     for accession in ["0001752724-20-038765", "0001752724-20-112086"]:
         top_holding = sec.ranked_snapshot(validated["all_filings"][accession], "a" * 64)["top10"][0]
         assert top_holding["security_lending"]["is_cash_collateral"] is True
+
+
+def test_seed_no_tickers_are_a_neutral_source_property(actual_seed):
+    _, validated = actual_seed
+    for _, accession, _, _ in BASELINE:
+        ranked = sec.ranked_snapshot(validated["all_filings"][accession], "a" * 64)
+        assert "supplies no exchange tickers" in ranked["identifier_note"]
+        assert not any("ticker" in note for note in ranked["quality_notes"])

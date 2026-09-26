@@ -94,6 +94,16 @@ def test_missing_historic_tickers_and_non_top_identifiers_are_preserved():
     assert "no reported ticker" in " ".join(sec.ranked_snapshot(result, "a" * 64)["quality_notes"])
 
 
+def test_all_absent_tickers_are_a_neutral_source_property():
+    result = parse()
+    for row in result["holdings"]:
+        row["ticker"] = []
+    ranked = sec.ranked_snapshot(result, "a" * 64)
+    assert "supplies no exchange tickers" in ranked["identifier_note"]
+    assert "CUSIP" in ranked["identifier_note"]
+    assert not any("ticker" in note for note in ranked["quality_notes"])
+
+
 def test_unusual_totals_are_reported_without_renormalization():
     item = filing()
     result = parse(raw=holdings(item, allocation_delta="2"))

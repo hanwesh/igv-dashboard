@@ -33,7 +33,7 @@
     .quarter-detail { padding: 20px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
     .holding-card { border: 1px solid #dce4e7; border-radius: 9px; padding: 12px; min-width: 0; overflow-wrap: anywhere; }
     .holding-card .rank { font-size: 11px; font-weight: 700; color: #637984; }
-    .holding-card .ticker { font-size: 17px; font-weight: 750; margin-top: 6px; }
+    .holding-card .security-title { font-size: 17px; font-weight: 750; margin-top: 6px; }
     .holding-card .weight { font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; margin: 3px 0; }
     .holding-card .name, .holding-card .identifier { font-size: 11px; color: #536672; line-height: 1.5; margin-top: 6px; }
     .quarter-note { padding: 0 20px 20px; font-size: 13px; color: #536672; overflow-wrap: anywhere; }
@@ -95,6 +95,7 @@
     </header>
     <p class="source-note" id="stale-warning" role="status" hidden></p>
     <p class="subtle" id="publication-lag"></p>
+    <p class="subtle" id="identifier-note">__IDENTIFIER_NOTE__</p>
     <p class="source-note" id="collateral-note"><strong>As-filed top ten, including securities-lending collateral.</strong> N-PORT includes cash collateral and cash-management positions, not just equities. Their offsetting obligations are reported elsewhere, so investment weights can exceed 100% and this list can differ from the issuer's published top ten. We never renormalize or silently exclude them.</p>
     <section class="panel" id="chart-panel" aria-labelledby="chart-heading">
       <div class="panel-head">
@@ -108,7 +109,7 @@
           <div class="tradingview-widget-copyright"><a href="https://www.tradingview.com/symbols/AMEX-IGV/" rel="noopener noreferrer" target="_blank"><span class="blue-text">IGV chart</span></a><span class="trademark"> by TradingView</span></div>
         </div>
       </div>
-      <p class="chart-note">TradingView supplies a five-year weekly OHLC chart with volume. Its Cboe One feed may be delayed; it is not a primary-exchange close series. The chart is not synchronized with the selected SEC quarter or the holdings refresh timestamp. This site does not download, calculate or export prices, returns, OHLC or volume.
+      <p class="chart-note">TradingView supplies a five-year weekly OHLC chart with volume; its 60-month preset uses weekly resolution. The displayed Cboe One feed is delayed, not a primary-exchange close series. The chart is not synchronized with the selected SEC quarter or the holdings refresh timestamp. This site does not download, calculate or export prices, returns, OHLC or volume.
         <a id="chart-help" href="https://www.tradingview.com/symbols/AMEX-IGV/" target="_blank" rel="noopener noreferrer">Open IGV on TradingView if the chart is unavailable</a>.</p>
     </section>
     <section class="stats" id="stats" aria-label="Holdings summary" hidden>
@@ -223,9 +224,9 @@
       for (const row of item.top10) {
         const card = make("div", "holding-card");
         card.append(make("div", "rank", "#" + row.rank + " / " + row.asset_category));
-        card.append(make("div", "ticker", row.ticker.join("; ") || "Ticker not reported"));
+        card.append(make("div", "security-title", row.title));
         card.append(make("div", "weight", pct(row.weight_pct)));
-        card.append(make("div", "name", row.title));
+        card.append(make("div", "identifier", row.ticker.join("; ") || "Ticker not reported"));
         if (row.title !== row.name) card.append(make("div", "identifier", "Issuer: " + row.name));
         if (category(row)) card.append(make("div", "category", category(row)));
         card.append(make("div", "identifier", identifiers(row)));
@@ -238,6 +239,7 @@
       notes.append(make("p", "", "Accession " + provenance.accession + " / Retrieved " + provenance.retrieved_at_utc));
       notes.append(make("p", "", "Original XML SHA256: " + provenance.source_sha256));
       notes.append(make("p", "", "Normalized immutable object SHA256: " + item.object_sha256));
+      if (item.identifier_note && !snapshots.every(snapshot => snapshot.identifier_note)) notes.append(make("p", "subtle", item.identifier_note));
       for (const note of item.quality_notes) notes.append(make("p", "source-note", note));
     }
     function renderTable() {
@@ -261,7 +263,7 @@
           cell.title = row.title + " / Issuer: " + row.name + " / " + identifiers(row);
           const searchable = [...row.ticker, row.name, row.title, row.cusip || "", ...row.isin].join(" ").toLocaleLowerCase();
           if (query && searchable.includes(query)) cell.classList.add("match");
-          cell.append(make("span", "symbol", row.ticker.join("; ") || "Ticker not reported"), make("span", "holding-name", row.title), make("span", "category", category(row)), make("span", "pct", pct(row.weight_pct)));
+          cell.append(make("span", "symbol", row.title), make("span", "holding-name", row.ticker.join("; ") || "Ticker not reported"), make("span", "holding-name", "CUSIP: " + (row.cusip || "not reported")), make("span", "category", category(row)), make("span", "pct", pct(row.weight_pct)));
           const td = make("td");
           td.append(cell);
           tr.append(td);

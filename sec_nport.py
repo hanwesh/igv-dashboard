@@ -935,7 +935,13 @@ def ranked_snapshot(snapshot: dict, object_sha256: str) -> dict:
             "can differ); values are retained without normalization."
         )
     missing = sum(not row["ticker"] for row in top)
-    if missing:
+    identifier_note = ""
+    if not any(row["ticker"] for row in rows):
+        identifier_note = (
+            "This SEC N-PORT filing supplies no exchange tickers. Positions are identified "
+            "by security title, issuer name, CUSIP and available ISIN; no tickers are inferred."
+        )
+    elif missing:
         notes.append(
             f"{missing} top-ten positions have no reported ticker. "
             "SEC names and available CUSIP/ISIN identifiers are shown; no current tickers inferred."
@@ -956,6 +962,7 @@ def ranked_snapshot(snapshot: dict, object_sha256: str) -> dict:
             "top10_weight_pct": decimal_sum(row["weight_pct"] for row in top),
             "portfolio_weight_pct": total,
             "quality_notes": notes,
+            "identifier_note": identifier_note,
             "object_sha256": object_sha256,
         }.items()
         if key != "holdings"
