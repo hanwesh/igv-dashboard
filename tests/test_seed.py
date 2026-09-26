@@ -119,6 +119,17 @@ def test_seed_no_tickers_are_a_neutral_source_property(actual_seed):
         assert not any("ticker" in note for note in ranked["quality_notes"])
 
 
+def test_latest_seed_missing_identifiers_belong_to_non_top_positions(actual_seed):
+    _, validated = actual_seed
+    item = validated["all_filings"]["0002071691-26-019778"]
+    assert {row["source_row"] for row in item["holdings"] if not row["isin"]} == {19, 54}
+    assert {row["source_row"] for row in item["holdings"] if not row["cusip"]} == {17, 19, 54}
+    assert all(row["asset_category"] == "DE" for row in item["holdings"] if not row["isin"])
+    cash = [row for row in item["holdings"] if row["asset_category"] == "STIV"]
+    assert len(cash) == 2 and all(row["cusip"] and row["isin"] for row in cash)
+    assert all(row["cusip"] for row in sec.ranked_snapshot(item, "a" * 64)["top10"])
+
+
 def test_seed_cross_quarter_continuity_is_cusip_not_issuer_spelling(actual_seed):
     _, validated = actual_seed
     originals = {accession: validated["all_filings"][accession] for _, accession, _, _ in BASELINE}

@@ -441,7 +441,14 @@ def test_unknown_or_legacy_site_files_are_not_republished(archive, tmp_path):
     assert tree_bytes(output) == before
 
 
-def test_cli_and_no_data_gates_do_not_fetch_or_create_output(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize("actions", ["false", "true"])
+def test_cli_and_no_data_gates_do_not_fetch_or_create_output(
+    tmp_path, monkeypatch, capsys, actions
+):
+    monkeypatch.setenv("GITHUB_ACTIONS", actions)
+    monkeypatch.setenv("GITHUB_REPOSITORY", sec.REPOSITORY)
+    monkeypatch.setenv("GITHUB_REF", "refs/heads/main")
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "push")
     root, output = tmp_path / "data", tmp_path / "site"
     for command in ["refresh", "bootstrap", "build"]:
         assert app.main([command, "--data-dir", str(root), "--output", str(output)]) == 2

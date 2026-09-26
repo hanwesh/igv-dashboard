@@ -49,8 +49,9 @@ months, if discovered under future reporting rules, are retained but do not
 count toward the 20 quarterly portfolios.
 
 These are delayed reports, not current holdings. Original filings in the seed
-usually arrive approximately **55-60 days after the reported quarter**;
-amendments can arrive much later. The stale threshold is the next nominal
+usually arrive approximately **55-60 days after the reported quarter**
+(the seed's original-filing range is 53-62 days); amendments can arrive much
+later. The stale threshold is the next nominal
 fiscal-quarter month end plus **60 days and a 7-day monitoring grace period**.
 This is an operational freshness check, not a legal-deadline calculation.
 After that threshold the browser warns, and production refresh/build fails
@@ -89,9 +90,12 @@ reflect prices, fund flows and corporate actions, not just purchases or sales.
 
 None of the IGV seed filings supply exchange tickers. This is a property of
 the source, not a per-position data-quality failure. Security titles and issuer
-names are shown as filed; CUSIP is present on every seed row. ISIN is available
-for **109 of the latest 111 rows**; the two cash funds lack ISIN. Historical
-tickers are never inferred from current identifiers.
+names are shown as filed; CUSIP identifies every displayed top-ten position.
+ISIN is available for **109 of the latest 111 rows**, and CUSIP for **108/111**.
+The two reported index-derivative rows lack both identifiers; the non-top Elastic
+position has ISIN but no reported CUSIP. Both cash funds have CUSIP and ISIN.
+These legitimate non-top nulls remain intact. Historical tickers are never
+inferred from current identifiers.
 
 Cross-quarter filtering, historical-name search and top-ten appearance counts
 use **exact CUSIP**, never name spelling or fuzzy matching. A group's label is
