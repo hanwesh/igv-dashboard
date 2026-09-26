@@ -1,4 +1,4 @@
-name: Validate, refresh and deploy
+name: Validate, refresh and deploy SEC quarterly holdings
 
 on:
   pull_request:
@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Synthetic-only checks
+    name: Offline checks
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -31,7 +31,7 @@ jobs:
           cache: pip
       - name: Install declared dependencies
         run: python -m pip install -r requirements-dev.txt
-      - name: Lint and synthetic unit/workflow checks
+      - name: Lint, synthetic behavior and offline SEC seed checks
         run: |
           python -m ruff check .
           python -m ruff format --check .
@@ -40,36 +40,40 @@ jobs:
         run: python -m playwright install --with-deps chromium
       - name: Synthetic native-UI smoke check
         run: python -m tests.browser_smoke
+      - name: Offline SEC provenance and retained history check
+        run: python igv_snapshot.py validate --allow-stale
       - name: Report the publication boundary
         if: always()
         env:
-          APPROVAL: ${{ vars.DATA_PUBLICATION_APPROVED }}
+          APPROVAL: ${{ vars.SEC_PUBLICATION_APPROVED }}
         run: |
           {
-            echo '## Code-only checks'
-            echo 'Tests use independently generated, test-only fixtures; no financial requests or data artifacts.'
+            echo '## SEC-only quarterly checks'
+            echo 'Checks use synthetic behavior fixtures and offline normalized SEC seed regressions.'
+            echo 'No financial requests or uploaded report artifacts run in checks.'
             if [[ "$APPROVAL" != 'true' ]]; then
               echo '**Live refresh, archive commits, failure issues and Pages are OFF.**'
-              echo 'DATA_PUBLICATION_APPROVED is not true. Source redistribution permission remains unresolved.'
+              echo 'SEC_PUBLICATION_APPROVED is not true. Keep the independent legacy DATA_PUBLICATION_APPROVED=false.'
             else
-              echo 'Approval flag is true; mutation jobs still require this repository and trusted main context.'
+              echo 'SEC approval is true; trusted main context, an audited SEC seed and declared SEC access are still required.'
             fi
+            echo 'No verified factual seed means no site. Synthetic output is never a production fallback.'
           } >> "$GITHUB_STEP_SUMMARY"
 
   refresh:
-    name: Authorized archive persistence
+    name: Gated SEC factual archive persistence
     needs: checks
     if: >-
       github.repository == 'hanwesh/igv-dashboard' &&
       github.ref == 'refs/heads/main' &&
       contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) &&
-      vars.DATA_PUBLICATION_APPROVED == 'true'
+      vars.SEC_PUBLICATION_APPROVED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
       contents: write
     env:
-      DATA_PUBLICATION_APPROVED: ${{ vars.DATA_PUBLICATION_APPROVED }}
+      SEC_PUBLICATION_APPROVED: ${{ vars.SEC_PUBLICATION_APPROVED }}
     outputs:
       data_sha: ${{ steps.persist.outputs.data_sha }}
     steps:
@@ -82,7 +86,11 @@ jobs:
           python-version: "3.13"
           cache: pip
       - run: python -m pip install -r requirements.txt
-      - name: Fetch exact missing snapshots and coherent price window
+      - name: Require an existing audited SEC-only seed before any acquisition
+        run: python igv_snapshot.py validate --allow-stale
+      - name: Check SEC filings and amendments
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
         run: python igv_snapshot.py refresh --allow-network
       - name: Validate and build before persisting
         run: |
@@ -95,20 +103,20 @@ jobs:
           if ! git diff --cached --quiet; then
             git config user.name 'github-actions[bot]'
             git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'data: refresh verified monthly archive' \
+            git commit -m 'data: refresh normalized SEC quarterly archive' \
               -m 'Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>'
             git push origin HEAD:main
           fi
           echo "data_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   deploy:
-    name: Authorized Pages deployment
+    name: Gated SEC-only Pages deployment
     needs: [checks, refresh]
     if: >-
       github.repository == 'hanwesh/igv-dashboard' &&
       github.ref == 'refs/heads/main' &&
       contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) &&
-      vars.DATA_PUBLICATION_APPROVED == 'true'
+      vars.SEC_PUBLICATION_APPROVED == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -119,7 +127,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     env:
-      DATA_PUBLICATION_APPROVED: ${{ vars.DATA_PUBLICATION_APPROVED }}
+      SEC_PUBLICATION_APPROVED: ${{ vars.SEC_PUBLICATION_APPROVED }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -130,8 +138,10 @@ jobs:
           python-version: "3.13"
           cache: pip
       - run: python -m pip install -r requirements.txt
-      - name: Build only the persisted, complete production archive
-        run: python igv_snapshot.py build
+      - name: Build only persisted, complete SEC factual holdings
+        run: |
+          python igv_snapshot.py validate
+          python igv_snapshot.py build
       - name: Refuse to deploy over a newer main revision
         env:
           EXPECTED_SHA: ${{ needs.refresh.outputs.data_sha }}
@@ -156,14 +166,14 @@ jobs:
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
 
   notify:
-    name: Authorized failure/recovery issue
+    name: Gated SEC failure/recovery issue
     needs: [checks, refresh, deploy]
     if: >-
       always() &&
       github.repository == 'hanwesh/igv-dashboard' &&
       github.ref == 'refs/heads/main' &&
       contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) &&
-      vars.DATA_PUBLICATION_APPROVED == 'true' &&
+      vars.SEC_PUBLICATION_APPROVED == 'true' &&
       (contains(needs.*.result, 'failure') || needs.deploy.result == 'success')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -171,7 +181,7 @@ jobs:
       contents: read
       issues: write
     env:
-      DATA_PUBLICATION_APPROVED: ${{ vars.DATA_PUBLICATION_APPROVED }}
+      SEC_PUBLICATION_APPROVED: ${{ vars.SEC_PUBLICATION_APPROVED }}
       GH_TOKEN: ${{ github.token }}
       PIPELINE_RESULT: ${{ needs.deploy.result == 'success' && 'success' || 'failure' }}
     steps:

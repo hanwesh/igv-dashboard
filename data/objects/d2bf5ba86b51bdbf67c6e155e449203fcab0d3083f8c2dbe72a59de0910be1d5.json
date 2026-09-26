@@ -1,0 +1,4144 @@
+{
+  "schema_version": 2,
+  "data_kind": "sec-nport-public-facts",
+  "source": "sec-edgar-nport",
+  "registrant_cik": "0001100663",
+  "series_id": "S000004355",
+  "series_name": "iShares Expanded Tech-Software Sector ETF",
+  "reported_as_of": "2025-03-31",
+  "fiscal_year_end": "2025-03-31",
+  "fiscal_quarter": 4,
+  "net_assets_usd": "9890091504.98",
+  "source_row_count": 121,
+  "holdings": [
+    {
+      "source_row": 1,
+      "source_row_sha256": "dec9b87ab1e6e19c99dee3a109c098c68b146c6ecf82bea6e03429cc1fc38aec",
+      "name": "Oracle Corp.",
+      "title": "Oracle Corp.",
+      "cusip": "68389X105",
+      "lei": "1Z4GXXU7ZHVWFCD8TV52",
+      "isin": [
+        "US68389X1054"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "68389X105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "5645146.00000000",
+      "market_value_usd": "789247862.26000000",
+      "weight_pct": "7.980187664215",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 2,
+      "source_row_sha256": "fc134c47824d0f31109ca928e145a044dccf3f5c2e003be2dad7129378b79e50",
+      "name": "InterDigital, Inc.",
+      "title": "InterDigital, Inc.",
+      "cusip": "45867G101",
+      "lei": "529900HQAUTC3VI47G64",
+      "isin": [
+        "US45867G1013"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "45867G101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "96781.00000000",
+      "market_value_usd": "20009471.75000000",
+      "weight_pct": "0.202318368236",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 3,
+      "source_row_sha256": "1a3410c2da511b130a9d8aad7d08dfa33f27c6c6ec706610be20ced50de85135",
+      "name": "nCino, Inc.",
+      "title": "nCino, Inc.",
+      "cusip": "63947X101",
+      "lei": "549300WVRR2WR3L6MZ46",
+      "isin": [
+        "US63947X1019"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "63947X101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "347261.00000000",
+      "market_value_usd": "9539259.67000000",
+      "weight_pct": "0.096452693740",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "2997416.52000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 4,
+      "source_row_sha256": "d16c33927de5dd050d8abc85914fa5df201f7e0297d0e551c98833debd4355a5",
+      "name": "Cadence Design Systems, Inc.",
+      "title": "Cadence Design Systems, Inc.",
+      "cusip": "127387108",
+      "lei": "GCT7RXJOGLXPV0NXZY22",
+      "isin": [
+        "US1273871087"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "127387108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1030572.00000000",
+      "market_value_usd": "262105376.76000000",
+      "weight_pct": "2.650181513770",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 5,
+      "source_row_sha256": "4c0391d4018cbbbd6352060ab6c1384cd74de8e389c2960b10211130c2b14cea",
+      "name": "Dolby Laboratories, Inc.",
+      "title": "Dolby Laboratories, Inc., Class A",
+      "cusip": "25659T107",
+      "lei": "549300X04FB2QPCJ5J24",
+      "isin": [
+        "US25659T1079"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "25659T107",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "229470.00000000",
+      "market_value_usd": "18428735.70000000",
+      "weight_pct": "0.186335340686",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 6,
+      "source_row_sha256": "f52f36ce0c4591cdf07972b0d36698f860c2a886ab9e710a0c577707e561846b",
+      "name": "Rapid7, Inc.",
+      "title": "Rapid7, Inc.",
+      "cusip": "753422104",
+      "lei": "549300GNVG5D60KEYN14",
+      "isin": [
+        "US7534221046"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "753422104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "236196.00000000",
+      "market_value_usd": "6261555.96000000",
+      "weight_pct": "0.063311405732",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 7,
+      "source_row_sha256": "7cae1c8cb5f7de5dfbeb001848db4a893a856de82883b857d762157012f25ee7",
+      "name": "Crowdstrike Holdings, Inc.",
+      "title": "Crowdstrike Holdings, Inc., Class A",
+      "cusip": "22788C105",
+      "lei": "549300YBY08K9KM4HX32",
+      "isin": [
+        "US22788C1053"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "22788C105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "925534.00000000",
+      "market_value_usd": "326324777.72000000",
+      "weight_pct": "3.299512219433",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 8,
+      "source_row_sha256": "0fe553475a5e62d9e0d3af1461e0d94f6efe24a6a6e2b1d6407c23dcbef64154",
+      "name": "AvePoint, Inc.",
+      "title": "AvePoint, Inc., Class A",
+      "cusip": "053604104",
+      "lei": null,
+      "isin": [
+        "US0536041041"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "053604104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "386262.00000000",
+      "market_value_usd": "5577623.28000000",
+      "weight_pct": "0.056396073556",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 9,
+      "source_row_sha256": "568aa855a5698f9ce2307b6450e610d4683c385bddc479e92678c6f63ccbd6ef",
+      "name": "Core Scientific, Inc.",
+      "title": "Core Scientific, Inc.",
+      "cusip": "21874A106",
+      "lei": null,
+      "isin": [
+        "US21874A1060"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "21874A106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1046830.00000000",
+      "market_value_usd": "7579049.20000000",
+      "weight_pct": "0.076632751033",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 10,
+      "source_row_sha256": "2353c0523a8f60db4e7e248390afdbfa9992204a751475d7960d323a5a607af8",
+      "name": "Hut 8 Corp.",
+      "title": "Hut 8 Corp.",
+      "cusip": "44812J104",
+      "lei": "98450066FEF9C1D3FC20",
+      "isin": [
+        "US44812J1043"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "44812J104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "310782.00000000",
+      "market_value_usd": "3611286.84000000",
+      "weight_pct": "0.036514190371",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "3368638.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 11,
+      "source_row_sha256": "b55d55acbf49a5aa41b4424661916b675d784504f52465bf14c2604125371a0f",
+      "name": "RingCentral, Inc.",
+      "title": "RingCentral, Inc., Class A",
+      "cusip": "76680R206",
+      "lei": "549300C8EH0H1614VE84",
+      "isin": [
+        "US76680R2067"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "76680R206",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "299800.00000000",
+      "market_value_usd": "7423048.00000000",
+      "weight_pct": "0.075055402634",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "277312.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 12,
+      "source_row_sha256": "a81598963c60a0679ed10b425a5333233c36fa6295c56d4b5d117cd30e001b2c",
+      "name": "E2open Parent Holdings, Inc.",
+      "title": "E2open Parent Holdings, Inc., Class A",
+      "cusip": "29788T103",
+      "lei": null,
+      "isin": [
+        "US29788T1034"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "29788T103",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "771973.00000000",
+      "market_value_usd": "1543946.00000000",
+      "weight_pct": "0.015611038575",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "1460972.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 13,
+      "source_row_sha256": "62d0cd5273203bd6ae9080565e1a48a69f863477c3722c7c496bd18a70ded869",
+      "name": "Open Text Corp.",
+      "title": "Open Text Corp.",
+      "cusip": "683715106",
+      "lei": "549300HP7ONDQODZJV16",
+      "isin": [
+        "CA6837151068"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "683715106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "990122.00000000",
+      "market_value_usd": "25010481.72000000",
+      "weight_pct": "0.252884229710",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "591084.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 14,
+      "source_row_sha256": "88e82bfe6f018a81231997faa0e2cc586c1bf9430d7c2cf6cc6adea4668d5cb2",
+      "name": "Tenable Holdings, Inc.",
+      "title": "Tenable Holdings, Inc.",
+      "cusip": "88025T102",
+      "lei": "5493004S5OMPESF0EF83",
+      "isin": [
+        "US88025T1025"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "88025T102",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "450139.00000000",
+      "market_value_usd": "15745862.22000000",
+      "weight_pct": "0.159208458405",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "923472.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 15,
+      "source_row_sha256": "c66c4e4fd943ea69316586120581fb2fa6ff71f3da9e8f427bfd12838b912286",
+      "name": "Gen Digital, Inc.",
+      "title": "Gen Digital, Inc.",
+      "cusip": "668771108",
+      "lei": "YF6ZV0M6AU4FY94MK914",
+      "isin": [
+        "US6687711084"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "668771108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "2037905.00000000",
+      "market_value_usd": "54085998.70000000",
+      "weight_pct": "0.546870559011",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 16,
+      "source_row_sha256": "e7ecca400cab4b17274b675d5ea3ba5a5eda7d3d11330a2a2011cdadf30394b1",
+      "name": "Elastic NV",
+      "title": "Elastic NV",
+      "cusip": null,
+      "lei": "2549003I48WHHH937I59",
+      "isin": [
+        "NL0013056914"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "SBFXCLC63",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "327415.00000000",
+      "market_value_usd": "29172676.50000000",
+      "weight_pct": "0.294968721829",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 17,
+      "source_row_sha256": "5372066d96e6ba3c5872da1cb09d1f3b17a74e22f71d2fc64c5d80d5e1f31297",
+      "name": "SEMrush Holdings, Inc.",
+      "title": "SEMrush Holdings, Inc., Class A",
+      "cusip": "81686C104",
+      "lei": "254900WQEX0OLGK16D27",
+      "isin": [
+        "US81686C1045"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "81686C104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "122685.00000000",
+      "market_value_usd": "1144651.05000000",
+      "weight_pct": "0.011573715464",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 18,
+      "source_row_sha256": "f52de857c28b3b4b69f44b03e275fc1cd5a3d3114241272254455a00262881cb",
+      "name": "Intuit, Inc.",
+      "title": "Intuit, Inc.",
+      "cusip": "461202103",
+      "lei": "VI90HBPH7XSFMB9E4M29",
+      "isin": [
+        "US4612021034"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "461202103",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "759163.00000000",
+      "market_value_usd": "466118490.37000000",
+      "weight_pct": "4.712984608234",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 19,
+      "source_row_sha256": "e20b0bb3f0e7d176a83916ee2f71f4935c4665feac5cea40e2ae9b34a72d71f5",
+      "name": "PagerDuty, Inc.",
+      "title": "PagerDuty, Inc.",
+      "cusip": "69553P100",
+      "lei": "549300U1SB749EDAGH21",
+      "isin": [
+        "US69553P1003"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "69553P100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "337872.00000000",
+      "market_value_usd": "6172921.44000000",
+      "weight_pct": "0.062415210586",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "1180242.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 20,
+      "source_row_sha256": "9dde1df684474cb2c46d7eaf0d8676c6a6c659ef15a47276635053fe0062f6c7",
+      "name": "Dropbox, Inc.",
+      "title": "Dropbox, Inc., Class A",
+      "cusip": "26210C104",
+      "lei": "549300JCDF7UAR6TJR51",
+      "isin": [
+        "US26210C1045"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "26210C104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "815085.00000000",
+      "market_value_usd": "21770920.35000000",
+      "weight_pct": "0.220128603856",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "5862845.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 21,
+      "source_row_sha256": "f1d8d72c8bbbb8cc34e4773412633c18e1ecb82cb9d80acbb4eb75e9df650f9c",
+      "name": "Fair Isaac Corp.",
+      "title": "Fair Isaac Corp.",
+      "cusip": "303250104",
+      "lei": "RI6HET5SJUEY30V1PS26",
+      "isin": [
+        "US3032501047"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "303250104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "91760.00000000",
+      "market_value_usd": "169220121.60000000",
+      "weight_pct": "1.711006632393",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 22,
+      "source_row_sha256": "7279e08a69f5f4f7bda97a9e5607994412b5097f586bcc85e259a0660a6fe5d6",
+      "name": "BlackRock Funds III",
+      "title": "BlackRock Cash Funds: Institutional, SL Agency Shares",
+      "cusip": "066922519",
+      "lei": "549300JDHS1T46VWOG19",
+      "isin": [
+        "US0669225197"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "066922519",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "STIV",
+      "issuer_category": "RF",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "663353829.59000000",
+      "market_value_usd": "663685506.50000000",
+      "weight_pct": "6.710610373683",
+      "security_lending": {
+        "cash_collateral_value_usd": "663685506.50000000",
+        "is_cash_collateral": true,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 23,
+      "source_row_sha256": "898b49a53f9d7d339999ef97de168052dcb520f67cf09c024bcf9d2c8a098af7",
+      "name": "NCR Voyix Corp.",
+      "title": "NCR Voyix Corp.",
+      "cusip": "62886E108",
+      "lei": "549300YKTY8JX1DV2R67",
+      "isin": [
+        "US62886E1082"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "62886E108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "547004.00000000",
+      "market_value_usd": "5333289.00000000",
+      "weight_pct": "0.053925577911",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "2715043.50000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 24,
+      "source_row_sha256": "c4d55140addfeecf0bcd88d0d0c18a33b95c566e9d205e54202d7e3f53120be6",
+      "name": "Zscaler, Inc.",
+      "title": "Zscaler, Inc.",
+      "cusip": "98980G102",
+      "lei": "529900MZ0RTK1BWRNF46",
+      "isin": [
+        "US98980G1022"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "98980G102",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "357456.00000000",
+      "market_value_usd": "70926419.52000000",
+      "weight_pct": "0.717146241612",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "39882420.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 25,
+      "source_row_sha256": "f82337da0ce0c68acc7f1f7e48297201cd9f4d813096a6ec6eb4789952e4248e",
+      "name": "Confluent, Inc.",
+      "title": "Confluent, Inc., Class A",
+      "cusip": "20717M103",
+      "lei": "254900MRZ83YWUV7SN74",
+      "isin": [
+        "US20717M1036"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "20717M103",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "971516.00000000",
+      "market_value_usd": "22772335.04000000",
+      "weight_pct": "0.230254037877",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "8337654.88000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 26,
+      "source_row_sha256": "0495c96c6050d3f025e0bde08c70d97aa31c159e6f41a06e57d3f8201e8213de",
+      "name": "Unity Software, Inc.",
+      "title": "Unity Software, Inc.",
+      "cusip": "91332U101",
+      "lei": "549300D1ESJMGNQNG432",
+      "isin": [
+        "US91332U1016"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "91332U101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1107165.00000000",
+      "market_value_usd": "21689362.35000000",
+      "weight_pct": "0.219303960323",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "17220824.58000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 27,
+      "source_row_sha256": "6f664ceec667abd3fed3bee6bc10255601533cfb7761c22fe3b42039ca69888a",
+      "name": "Cleanspark, Inc.",
+      "title": "Cleanspark, Inc.",
+      "cusip": "18452B209",
+      "lei": "254900VO7KBRJQDGY810",
+      "isin": [
+        "US18452B2097"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "18452B209",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1042559.00000000",
+      "market_value_usd": "7005996.48000000",
+      "weight_pct": "0.070838540537",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "6942190.08000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 28,
+      "source_row_sha256": "fec1ff67fcef81eb87589b77a5d22da3d24576a5e50504b3300a09f704c735b3",
+      "name": "Gitlab, Inc.",
+      "title": "Gitlab, Inc., Class A",
+      "cusip": "37637K108",
+      "lei": "9845004Y40FACG81ED49",
+      "isin": [
+        "US37637K1088"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "37637K108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "462650.00000000",
+      "market_value_usd": "21744550.00000000",
+      "weight_pct": "0.219861969821",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "20574908.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 29,
+      "source_row_sha256": "1a2acc0b0fc5bf90fb2b3e9b5bb419c0f5a5ee244d9cf292f60e364f68ffac5f",
+      "name": "Box, Inc.",
+      "title": "Box, Inc., Class A",
+      "cusip": "10316T104",
+      "lei": "549300KQUCPD8687YS68",
+      "isin": [
+        "US10316T1043"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "10316T104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "538689.00000000",
+      "market_value_usd": "16623942.54000000",
+      "weight_pct": "0.168086842590",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "379578.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 30,
+      "source_row_sha256": "cecd1f5153a621f012d190957b32844b040d330bacc69502fdf63e9821fda016",
+      "name": "Pegasystems, Inc.",
+      "title": "Pegasystems, Inc.",
+      "cusip": "705573103",
+      "lei": "549300FMCOKPL06FYN26",
+      "isin": [
+        "US7055731035"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "705573103",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "167454.00000000",
+      "market_value_usd": "11641402.08000000",
+      "weight_pct": "0.117707728731",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "6729536.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 31,
+      "source_row_sha256": "8dbf17ef84bba8b8bf47a96cf1e750aeb822c27eceb7d9da6c9e28b5c676d3fe",
+      "name": "PTC, Inc.",
+      "title": "PTC, Inc.",
+      "cusip": "69370C100",
+      "lei": "54930050SSMU8SKDJ030",
+      "isin": [
+        "US69370C1009"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "69370C100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "452134.00000000",
+      "market_value_usd": "70058163.30000000",
+      "weight_pct": "0.708367190179",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "402870.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 32,
+      "source_row_sha256": "9c48e43ce79c5651ff66c1592bf6952da17c5770480ad04276e12cf294711ade",
+      "name": "Jamf Holding Corp.",
+      "title": "Jamf Holding Corp.",
+      "cusip": "47074L105",
+      "lei": "254900IHLXZU4Z5ANA12",
+      "isin": [
+        "US47074L1052"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "47074L105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "237022.00000000",
+      "market_value_usd": "2879817.30000000",
+      "weight_pct": "0.029118206829",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 33,
+      "source_row_sha256": "aa858a98dd5f760d0ddba64aa5a972d8847b103bb32062ac02a3a850a7bb1c88",
+      "name": "BILL Holdings, Inc.",
+      "title": "BILL Holdings, Inc.",
+      "cusip": "090043100",
+      "lei": "549300IBF9VZZIGOZW63",
+      "isin": [
+        "US0900431000"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "090043100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "353370.00000000",
+      "market_value_usd": "16216149.30000000",
+      "weight_pct": "0.163963592165",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "7480070.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 34,
+      "source_row_sha256": "0a4504a694bca2ade7f9de804ae74bf8809738219a87a4b1531ed5942814cb76",
+      "name": "Descartes Systems Group, Inc. (The)",
+      "title": "Descartes Systems Group, Inc. (The)",
+      "cusip": "249906108",
+      "lei": "875500NEPA7JI5EOMN45",
+      "isin": [
+        "CA2499061083"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "249906108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "321914.00000000",
+      "market_value_usd": "32458588.62000000",
+      "weight_pct": "0.328193006138",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "3458469.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 35,
+      "source_row_sha256": "2318e1572139825544ee4b812350cdfdc29e7b879499da6091f39aca15fb8ad7",
+      "name": "Riot Platforms, Inc.",
+      "title": "Riot Platforms, Inc.",
+      "cusip": "767292105",
+      "lei": "5299005LKZAJQDQZDF73",
+      "isin": [
+        "US7672921050"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "767292105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1120877.00000000",
+      "market_value_usd": "7980644.24000000",
+      "weight_pct": "0.080693330653",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "7321624.16000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 36,
+      "source_row_sha256": "998435ec2ecfe53e6a1b8a3677966ff43e86ace58df0ec686dccb735a8db683f",
+      "name": "Vertex, Inc.",
+      "title": "Vertex, Inc., Class A",
+      "cusip": "92538J106",
+      "lei": "549300QMYW171MP1PL50",
+      "isin": [
+        "US92538J1060"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "92538J106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "196531.00000000",
+      "market_value_usd": "6880550.31000000",
+      "weight_pct": "0.069570138016",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "4351743.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 37,
+      "source_row_sha256": "f057e8c7014ace3a72825ac23d6c594b9e197ca223bf6f7ca00634d12d2d7ecf",
+      "name": "Adobe, Inc.",
+      "title": "Adobe, Inc.",
+      "cusip": "00724F101",
+      "lei": "FU4LY2G4933NH2E1CP29",
+      "isin": [
+        "US00724F1012"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "00724F101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1586650.00000000",
+      "market_value_usd": "608527874.50000000",
+      "weight_pct": "6.152904391163",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 38,
+      "source_row_sha256": "ad7dc78421e096aef8266c014d8d39392ef71c1df8e34fcbe0dfef418ebf6b2f",
+      "name": "Agilysys, Inc.",
+      "title": "Agilysys, Inc.",
+      "cusip": "00847J105",
+      "lei": "5299001XWB5V3B5IPN93",
+      "isin": [
+        "US00847J1051"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "00847J105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "84940.00000000",
+      "market_value_usd": "6161547.60000000",
+      "weight_pct": "0.062300208212",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "2276087.58000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 39,
+      "source_row_sha256": "f70108943fe586b2f92e37ffc7b6ae2958861339f4649b3617e1f8f111ce92e3",
+      "name": "Freshworks, Inc.",
+      "title": "Freshworks, Inc., Class A",
+      "cusip": "358054104",
+      "lei": "254900ULRGCUEIK0K191",
+      "isin": [
+        "US3580541049"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "358054104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "707402.00000000",
+      "market_value_usd": "9981442.22000000",
+      "weight_pct": "0.100923658946",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "2836110.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 40,
+      "source_row_sha256": "18f42889425eff1f953325d6a0f3ef4961bce5e40a80c129cb2e24b18494c043",
+      "name": "Qualys, Inc.",
+      "title": "Qualys, Inc.",
+      "cusip": "74758T303",
+      "lei": "549300EMBXYOW9W1XA17",
+      "isin": [
+        "US74758T3032"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "74758T303",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "137157.00000000",
+      "market_value_usd": "17272181.01000000",
+      "weight_pct": "0.174641265971",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 41,
+      "source_row_sha256": "020518e5c7b3b3f0e348ca1e1755dcca36edf9a8be70e4c231f2c9ea6e77ad51",
+      "name": "Workiva, Inc.",
+      "title": "Workiva, Inc., Class A",
+      "cusip": "98139A105",
+      "lei": "529900RTOQ8GRWHY1O58",
+      "isin": [
+        "US98139A1051"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "98139A105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "193221.00000000",
+      "market_value_usd": "14667406.11000000",
+      "weight_pct": "0.148304048578",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "850192.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 42,
+      "source_row_sha256": "ffe6acc76db9c39edf469d420842dbf6dc39b1a30e05e154cbda1f4dd894471a",
+      "name": "Aurora Innovation, Inc.",
+      "title": "Aurora Innovation, Inc., Class A",
+      "cusip": "051774107",
+      "lei": null,
+      "isin": [
+        "US0517741072"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "051774107",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "3923161.00000000",
+      "market_value_usd": "26383257.73000000",
+      "weight_pct": "0.266764546280",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "12461364.47500000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 43,
+      "source_row_sha256": "314d45019af46d999d6379dae564cfe0a19583ed21f326ba0116473e3c7d5c16",
+      "name": "Autodesk, Inc.",
+      "title": "Autodesk, Inc.",
+      "cusip": "052769106",
+      "lei": "FRKKVKAIQEF3FCSTPG55",
+      "isin": [
+        "US0527691069"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "052769106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "807884.00000000",
+      "market_value_usd": "211504031.20000000",
+      "weight_pct": "2.138544735339",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "863940.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 44,
+      "source_row_sha256": "77885d390dae887ea73e077db2dc8ae307ac899fc3ab64029f0d0520e4b0a8cc",
+      "name": "Asana, Inc.",
+      "title": "Asana, Inc., Class A",
+      "cusip": "04342Y104",
+      "lei": "254900X7UAJNMLPLZ510",
+      "isin": [
+        "US04342Y1047"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "04342Y104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "316980.00000000",
+      "market_value_usd": "4618398.60000000",
+      "weight_pct": "0.046697228207",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 45,
+      "source_row_sha256": "05210e22ba64b894d35e7d6a9cb9f463a1a9ddd9ab97b5234a41197d2f98affb",
+      "name": "Informatica, Inc.",
+      "title": "Informatica, Inc., Class A",
+      "cusip": "45674M101",
+      "lei": "984500E0DEFFE6DE9588",
+      "isin": [
+        "US45674M1018"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "45674M101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "313430.00000000",
+      "market_value_usd": "5469353.50000000",
+      "weight_pct": "0.055301343746",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "4550960.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 46,
+      "source_row_sha256": "5ba96523d8367e3539c769ae7f1deddfed5e00c859ded9787781a41eedabf123",
+      "name": "N/A",
+      "title": "Russell 2000 E-Mini Index",
+      "cusip": null,
+      "lei": null,
+      "isin": [],
+      "ticker": [],
+      "other": [
+        {
+          "value": "RTSM52027",
+          "type": "Inhouse Asset ID"
+        },
+        {
+          "value": "RTYM5 Index",
+          "type": "Future Ticker"
+        }
+      ],
+      "asset_category": "DE",
+      "issuer_category": "OTHER",
+      "payoff_profile": "N/A",
+      "units": "NC",
+      "currency": "USD",
+      "balance": "22.00000000",
+      "market_value_usd": "15563.72000000",
+      "weight_pct": "0.000157366794",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 47,
+      "source_row_sha256": "4ac1e106318fab7779ce40dadd798afa171bf8e893ebc33fb417e07892075aea",
+      "name": "Clearwater Analytics Holdings, Inc.",
+      "title": "Clearwater Analytics Holdings, Inc., Class A",
+      "cusip": "185123106",
+      "lei": null,
+      "isin": [
+        "US1851231068"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "185123106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "801440.00000000",
+      "market_value_usd": "21478592.00000000",
+      "weight_pct": "0.217172833933",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 48,
+      "source_row_sha256": "e04959392df313c3c034f13e597945886d3ff13f175230908e64473c1192a35f",
+      "name": "Datadog, Inc.",
+      "title": "Datadog, Inc., Class A",
+      "cusip": "23804L103",
+      "lei": "549300F6JNO0KRPO1K63",
+      "isin": [
+        "US23804L1035"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "23804L103",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1176927.00000000",
+      "market_value_usd": "116762927.67000000",
+      "weight_pct": "1.180605130005",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 49,
+      "source_row_sha256": "379c128d24bd29fadacc8beda09b5025bbc602bd5dcc78078b0d1056b8be4151",
+      "name": "Dynatrace, Inc.",
+      "title": "Dynatrace, Inc.",
+      "cusip": "268150109",
+      "lei": "6488T0Z33CE9L61EX904",
+      "isin": [
+        "US2681501092"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "268150109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1124851.00000000",
+      "market_value_usd": "53036724.65000000",
+      "weight_pct": "0.536261212783",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 50,
+      "source_row_sha256": "d144df777c0f5167a5d0d3418ed32e98a7679bd9a4478023f7dfdb9cd24c8be5",
+      "name": "Teradata Corp.",
+      "title": "Teradata Corp.",
+      "cusip": "88076W103",
+      "lei": "549300JU9SOUHV4U4R71",
+      "isin": [
+        "US88076W1036"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "88076W103",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "359984.00000000",
+      "market_value_usd": "8092440.32000000",
+      "weight_pct": "0.081823715341",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "793341.68000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 51,
+      "source_row_sha256": "17408ba74495ba4c9f895496a121cad0628ec87ef32e0b212e4a64706cf3b958",
+      "name": "Roper Technologies, Inc.",
+      "title": "Roper Technologies, Inc.",
+      "cusip": "776696106",
+      "lei": "54930003T4SXCIWVXY35",
+      "isin": [
+        "US7766961061"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "776696106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "402925.00000000",
+      "market_value_usd": "237556521.50000000",
+      "weight_pct": "2.401964849166",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 52,
+      "source_row_sha256": "bf4620ee147c182ccc576a2f10dd5138d2ab6c872871042b214e878e2f49089b",
+      "name": "ANSYS, Inc.",
+      "title": "ANSYS, Inc.",
+      "cusip": "03662Q105",
+      "lei": "549300VJV8H15Z5FJ571",
+      "isin": [
+        "US03662Q1058"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "03662Q105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "328591.00000000",
+      "market_value_usd": "104018766.96000000",
+      "weight_pct": "1.051747265509",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 53,
+      "source_row_sha256": "8630afa3cb823faa8631eaccb238731454a20c82b4258257567fd0f51e9cfdf2",
+      "name": "BlackBerry Ltd.",
+      "title": "BlackBerry Ltd.",
+      "cusip": "09228F103",
+      "lei": "549300HJD8NEGT71RF07",
+      "isin": [
+        "CA09228F1036"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "09228F103",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "2235059.00000000",
+      "market_value_usd": "8426172.43000000",
+      "weight_pct": "0.085198124059",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "5750950.27000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 54,
+      "source_row_sha256": "8eb0d1826d029a53f1d8f4a5bcbf4a460b5c24d155474e6878a5d52532eef638",
+      "name": "HubSpot, Inc.",
+      "title": "HubSpot, Inc.",
+      "cusip": "443573100",
+      "lei": "529900BLNVEW0MVKJB37",
+      "isin": [
+        "US4435731009"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "443573100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "195972.00000000",
+      "market_value_usd": "111956843.88000000",
+      "weight_pct": "1.132010192460",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 55,
+      "source_row_sha256": "66d049b9304a1d1cf28211a684dbbbe43fd966bc85318dac4c31d5568fe7ebd5",
+      "name": "DoubleVerify Holdings, Inc.",
+      "title": "DoubleVerify Holdings, Inc.",
+      "cusip": "25862V105",
+      "lei": null,
+      "isin": [
+        "US25862V1052"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "25862V105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "531784.00000000",
+      "market_value_usd": "7109952.08000000",
+      "weight_pct": "0.071889649114",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 56,
+      "source_row_sha256": "e9281a0932e775f80b2adda56e4763f7f1b8702c68cb6f964448549f97eb3f07",
+      "name": "SPS Commerce, Inc.",
+      "title": "SPS Commerce, Inc.",
+      "cusip": "78463M107",
+      "lei": "2549006XVF9GCCETDQ72",
+      "isin": [
+        "US78463M1071"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "78463M107",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "143013.00000000",
+      "market_value_usd": "18982115.49000000",
+      "weight_pct": "0.191930635631",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 57,
+      "source_row_sha256": "9b6e82d2fa4e04f16dc70c9c1757994f88d2491525d58659032410b0ddfdfe07",
+      "name": "Palantir Technologies, Inc.",
+      "title": "Palantir Technologies, Inc., Class A",
+      "cusip": "69608A108",
+      "lei": "549300UVN46B3BBDHO85",
+      "isin": [
+        "US69608A1088"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "69608A108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "7471345.00000000",
+      "market_value_usd": "630581518.00000000",
+      "weight_pct": "6.375891645516",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 58,
+      "source_row_sha256": "c63585b5474686da35dc45834ba9a73faf841ce2215c3b23a70026dd422139c6",
+      "name": "Clear Secure, Inc.",
+      "title": "Clear Secure, Inc., Class A",
+      "cusip": "18467V109",
+      "lei": null,
+      "isin": [
+        "US18467V1098"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "18467V109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "354260.00000000",
+      "market_value_usd": "9178876.60000000",
+      "weight_pct": "0.092808813703",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 59,
+      "source_row_sha256": "b0b6f34bd81c020e39dc25cd5bde9208d06aa198d0bf04e40d8f3aeb722a4db7",
+      "name": "Procore Technologies, Inc.",
+      "title": "Procore Technologies, Inc.",
+      "cusip": "74275K108",
+      "lei": "5493005PTWY0RHYRAH22",
+      "isin": [
+        "US74275K1088"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "74275K108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "402732.00000000",
+      "market_value_usd": "26588366.64000000",
+      "weight_pct": "0.268838429114",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "5912619.16000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 60,
+      "source_row_sha256": "f0b2afba39bbada6c1dffc1dd160d2c05e945a538ebe6dbb22f84a3065db9ff8",
+      "name": "Fortinet, Inc.",
+      "title": "Fortinet, Inc.",
+      "cusip": "34959E109",
+      "lei": "549300O0QJWDBAS0QX03",
+      "isin": [
+        "US34959E1091"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "34959E109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "2390422.00000000",
+      "market_value_usd": "230102021.72000000",
+      "weight_pct": "2.326591433498",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "1838566.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 61,
+      "source_row_sha256": "e81638f9fc018f08663fc56fd4303dd1610d357c49ba1f7c287dabfca5e353f4",
+      "name": "Rubrik, Inc.",
+      "title": "Rubrik, Inc., Class A",
+      "cusip": "781154109",
+      "lei": "254900TRGK2WTBYMYU27",
+      "isin": [
+        "US7811541090"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "781154109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "326895.00000000",
+      "market_value_usd": "19934057.10000000",
+      "weight_pct": "0.201555840913",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 62,
+      "source_row_sha256": "19753986c9a2db1b4cc825dcc89879895d9f8d28a7a6d769f23bfce193eb35a7",
+      "name": "QXO, Inc.",
+      "title": "QXO, Inc.",
+      "cusip": "82846H405",
+      "lei": null,
+      "isin": [
+        "US82846H4056"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "82846H405",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "920850.00000000",
+      "market_value_usd": "12468309.00000000",
+      "weight_pct": "0.126068692020",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "4501521.94000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 63,
+      "source_row_sha256": "fc859ced444fa9e224324be9d068663a9086f8dfeaf23f82cd6e33d6a405ae8b",
+      "name": "Sprinklr, Inc.",
+      "title": "Sprinklr, Inc., Class A",
+      "cusip": "85208T107",
+      "lei": "254900AR04RJ2BQO5S78",
+      "isin": [
+        "US85208T1079"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "85208T107",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "419833.00000000",
+      "market_value_usd": "3505605.55000000",
+      "weight_pct": "0.035445633119",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "569002.40000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 64,
+      "source_row_sha256": "d0ccf028d86cadbd2bd616b848335da47457e00b17aabdad7127fe8095f0ab4d",
+      "name": "Bentley Systems, Inc.",
+      "title": "Bentley Systems, Inc., Class B",
+      "cusip": "08265T208",
+      "lei": "549300WVEHPGE0Z56F71",
+      "isin": [
+        "US08265T2087"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "08265T208",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "580154.00000000",
+      "market_value_usd": "22823258.36000000",
+      "weight_pct": "0.230768930181",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 65,
+      "source_row_sha256": "3ab8ed12c3fa42ba1c3b898932ac98779c48916f61d288bcbb25adfdcd72c65b",
+      "name": "UiPath, Inc.",
+      "title": "UiPath, Inc., Class A",
+      "cusip": "90364P105",
+      "lei": "5493000YP61KBELDHT53",
+      "isin": [
+        "US90364P1057"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "90364P105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1593479.00000000",
+      "market_value_usd": "16412833.70000000",
+      "weight_pct": "0.165952293684",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "8324799.90000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 66,
+      "source_row_sha256": "0debb0450bdda7c268ad9f1f186b0670cb8a34d910fd21f8f86996e2c08d61b7",
+      "name": "Five9, Inc.",
+      "title": "Five9, Inc.",
+      "cusip": "338307101",
+      "lei": "254900MXP6EWY0SFFR59",
+      "isin": [
+        "US3383071012"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "338307101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "283043.00000000",
+      "market_value_usd": "7684617.45000000",
+      "weight_pct": "0.077700165323",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 67,
+      "source_row_sha256": "158c3fde1e8efc08d0bf3dda12a7ff2c18a423553baee040bfc801b2b2764d12",
+      "name": "Lightspeed Commerce, Inc.",
+      "title": "Lightspeed Commerce, Inc.",
+      "cusip": "53229C107",
+      "lei": "254900T8MDWRTGMFZ257",
+      "isin": [
+        "CA53229C1077"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "53229C107",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "516136.00000000",
+      "market_value_usd": "4516190.00000000",
+      "weight_pct": "0.045663783775",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "2825375.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 68,
+      "source_row_sha256": "b088492a316894fe5dab481edd8153af60a15943ab2f911cd51d2e872ddb9549",
+      "name": "Manhattan Associates, Inc.",
+      "title": "Manhattan Associates, Inc.",
+      "cusip": "562750109",
+      "lei": "529900Q1GJP7KD52SW51",
+      "isin": [
+        "US5627501092"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "562750109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "229728.00000000",
+      "market_value_usd": "39752133.12000000",
+      "weight_pct": "0.401938982060",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 69,
+      "source_row_sha256": "da032d3b51ec84c83fc0600639eb7fe4586a5a135f19527f0798538dcd39db14",
+      "name": "Take-Two Interactive Software, Inc.",
+      "title": "Take-Two Interactive Software, Inc.",
+      "cusip": "874054109",
+      "lei": "BOMSTHHJK882EWYX3334",
+      "isin": [
+        "US8740541094"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "874054109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "616781.00000000",
+      "market_value_usd": "127827862.25000000",
+      "weight_pct": "1.292484120957",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "2134675.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 70,
+      "source_row_sha256": "880e628067f042a01dd3d560b24fe6c9674fccca8ec627fd9b157ed810dbf26a",
+      "name": "Samsara, Inc.",
+      "title": "Samsara, Inc., Class A",
+      "cusip": "79589L106",
+      "lei": null,
+      "isin": [
+        "US79589L1061"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "79589L106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "952729.00000000",
+      "market_value_usd": "36518102.57000000",
+      "weight_pct": "0.369239279046",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "21785967.07000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 71,
+      "source_row_sha256": "da5d1850456ed82229c57f3591d4c345eb2a4748386ae7e748057b2f3d5a518a",
+      "name": "Appfolio, Inc.",
+      "title": "Appfolio, Inc., Class A",
+      "cusip": "03783C100",
+      "lei": "529900OOUUGT6JFC0S15",
+      "isin": [
+        "US03783C1009"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "03783C100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "87589.00000000",
+      "market_value_usd": "19260821.10000000",
+      "weight_pct": "0.194748664259",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "8138279.10000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 72,
+      "source_row_sha256": "40d97c0c6cbe185fe8dd7385017992132dfa753c1898f75236184ce05bd5c59b",
+      "name": "A10 Networks, Inc.",
+      "title": "A10 Networks, Inc.",
+      "cusip": "002121101",
+      "lei": "549300UQD4IWUML81Q35",
+      "isin": [
+        "US0021211018"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "002121101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "277203.00000000",
+      "market_value_usd": "4529497.02000000",
+      "weight_pct": "0.045798332783",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 73,
+      "source_row_sha256": "afd2ab69374f00ab7b0b9f63d7541ca4da412fb0565516be7ca12c2a52cab4fb",
+      "name": "Atlassian Corp.",
+      "title": "Atlassian Corp., Class A",
+      "cusip": "049468101",
+      "lei": "549300V7ZY5P02D2MY38",
+      "isin": [
+        "US0494681010"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "049468101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "616212.00000000",
+      "market_value_usd": "130766348.52000000",
+      "weight_pct": "1.322195537363",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 74,
+      "source_row_sha256": "dc9ee617ed79920db488b88adc19e3c72eef8183466dc72189a3d89d90032554",
+      "name": "SolarWinds Corp.",
+      "title": "SolarWinds Corp.",
+      "cusip": "83417Q204",
+      "lei": null,
+      "isin": [
+        "US83417Q2049"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "83417Q204",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "206262.00000000",
+      "market_value_usd": "3801408.66000000",
+      "weight_pct": "0.038436536791",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 75,
+      "source_row_sha256": "316783f1dbb703ca10b272dcf557750b24f5d47d0678d82303280676beae665e",
+      "name": "Appian Corp.",
+      "title": "Appian Corp., Class A",
+      "cusip": "03782L101",
+      "lei": "529900NIARIFW7HGU386",
+      "isin": [
+        "US03782L1017"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "03782L101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "160573.00000000",
+      "market_value_usd": "4626108.13000000",
+      "weight_pct": "0.046775180266",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "573319.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 76,
+      "source_row_sha256": "08c9fbd636a6b95d323c9ede9a49e33b8cb92f82ae684ff98cc5fcf6be8bd044",
+      "name": "Guidewire Software, Inc.",
+      "title": "Guidewire Software, Inc.",
+      "cusip": "40171V100",
+      "lei": "549300WXSG0J8IXZCK32",
+      "isin": [
+        "US40171V1008"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "40171V100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "313831.00000000",
+      "market_value_usd": "58799376.16000000",
+      "weight_pct": "0.594528130810",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 77,
+      "source_row_sha256": "1631ffb7701e06cc3f06df388ee3d29716959339ee740dac2268e0dd9d373657",
+      "name": "AppLovin Corp.",
+      "title": "AppLovin Corp., Class A",
+      "cusip": "03831W108",
+      "lei": "549300LLVXMUAOL3SQ07",
+      "isin": [
+        "US03831W1080"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "03831W108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "836948.00000000",
+      "market_value_usd": "221766111.56000000",
+      "weight_pct": "2.242305962976",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 78,
+      "source_row_sha256": "43b61351f4765242fb014b31de07da8bad5afed223d6974223bf428f9d9dddc7",
+      "name": "ServiceNow, Inc.",
+      "title": "ServiceNow, Inc.",
+      "cusip": "81762P102",
+      "lei": "549300HJTQM36M0E1G39",
+      "isin": [
+        "US81762P1021"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "81762P102",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "750859.00000000",
+      "market_value_usd": "597788884.26000000",
+      "weight_pct": "6.044321065775",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "47370330.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 79,
+      "source_row_sha256": "81e086ffa019980328f18e9e8c49ff14ba9452251e5a5d9c664aaaca13ad6a5e",
+      "name": "C3.ai, Inc.",
+      "title": "C3.ai, Inc., Class A",
+      "cusip": "12468P104",
+      "lei": "549300YDLK0YQO5B1V80",
+      "isin": [
+        "US12468P1049"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "12468P104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "428361.00000000",
+      "market_value_usd": "9016999.05000000",
+      "weight_pct": "0.091172048766",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "8730676.95000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 80,
+      "source_row_sha256": "fa57160581dcc8ce544bc1c16ba84ebdc39b643f0ba0b83637ccba3375c7c797",
+      "name": "BlackRock Funds III",
+      "title": "BlackRock Cash Funds: Institutional, SL Agency Shares",
+      "cusip": "066922519",
+      "lei": "549300JDHS1T46VWOG19",
+      "isin": [
+        "US0669225197"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "066922519",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "STIV",
+      "issuer_category": "RF",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "0.20000000",
+      "market_value_usd": "0.20000000",
+      "weight_pct": "0.000000002022",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 81,
+      "source_row_sha256": "2514f0e32497ae1e26896cee7f3f506017f73853134a77546bdac4214f5e6c95",
+      "name": "Intapp, Inc.",
+      "title": "Intapp, Inc.",
+      "cusip": "45827U109",
+      "lei": null,
+      "isin": [
+        "US45827U1097"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "45827U109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "199431.00000000",
+      "market_value_usd": "11642781.78000000",
+      "weight_pct": "0.117721679057",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 82,
+      "source_row_sha256": "af47dcf5fd956d804e46bd444491c9d665ebf980d7f8442eb74c5d379da360f5",
+      "name": "ACI Worldwide, Inc.",
+      "title": "ACI Worldwide, Inc.",
+      "cusip": "004498101",
+      "lei": "5493003BPVMZUJ6F5C02",
+      "isin": [
+        "US0044981019"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "004498101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "395061.00000000",
+      "market_value_usd": "21613787.31000000",
+      "weight_pct": "0.218539811275",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "831592.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 83,
+      "source_row_sha256": "2245c05e8e21225af2d7ccb6e8b223e5e0c55f6d149f81c52b77c7ab2e97f74d",
+      "name": "NextNav, Inc.",
+      "title": "NextNav, Inc.",
+      "cusip": "65345N106",
+      "lei": "549300X9CM76JRB02P70",
+      "isin": [
+        "US65345N1063"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "SBNTCBL57",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "250558.00000000",
+      "market_value_usd": "3049290.86000000",
+      "weight_pct": "0.030831776010",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 84,
+      "source_row_sha256": "8fe837390c6e797d1e210da8d038265748a7f8a8d73d4676ab0ed28025c18cee",
+      "name": "SentinelOne, Inc.",
+      "title": "SentinelOne, Inc., Class A",
+      "cusip": "81730H109",
+      "lei": "984500DCD44DBF954221",
+      "isin": [
+        "US81730H1095"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "81730H109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1111579.00000000",
+      "market_value_usd": "20208506.22000000",
+      "weight_pct": "0.204330831618",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "2385216.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 85,
+      "source_row_sha256": "4bb4182721ff23f74fbd4b168f11ce76b044bf6f03488ccf9f32e3a1a1f2dbdf",
+      "name": "BlackLine, Inc.",
+      "title": "BlackLine, Inc.",
+      "cusip": "09239B109",
+      "lei": "529900P9N7PK9LV5EK56",
+      "isin": [
+        "US09239B1098"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "09239B109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "194797.00000000",
+      "market_value_usd": "9432070.74000000",
+      "weight_pct": "0.095368892545",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "5515038.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 86,
+      "source_row_sha256": "149b0a52671485a2af9c1dca9e87a399a6ab44c1fa4803885897dfbcaf4a61c0",
+      "name": "Verint Systems, Inc.",
+      "title": "Verint Systems, Inc.",
+      "cusip": "92343X100",
+      "lei": "549300KEQJS5FRVUCO94",
+      "isin": [
+        "US92343X1000"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "92343X100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "233495.00000000",
+      "market_value_usd": "4167885.75000000",
+      "weight_pct": "0.042142034256",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "133875.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 87,
+      "source_row_sha256": "0375f8befca88ecf4a334e4dd0b47d58489108417579321bf375b54a83e95838",
+      "name": "Terawulf, Inc.",
+      "title": "Terawulf, Inc.",
+      "cusip": "88080T104",
+      "lei": "254900CVMW1SX2T78A64",
+      "isin": [
+        "US88080T1043"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "88080T104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1167138.00000000",
+      "market_value_usd": "3186286.74000000",
+      "weight_pct": "0.032216959149",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "3114272.07000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 88,
+      "source_row_sha256": "d7d63d88c176eb866df1e3f0b7abd1a40f7dbc54d535e5654083113fc6aafdb7",
+      "name": "Adeia, Inc.",
+      "title": "Adeia, Inc.",
+      "cusip": "00676P107",
+      "lei": null,
+      "isin": [
+        "US00676P1075"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "00676P107",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "409279.00000000",
+      "market_value_usd": "5410668.38000000",
+      "weight_pct": "0.054707970874",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 89,
+      "source_row_sha256": "6ed56381836f8b3bde8de430e4c600cd62a1459ce4cdfd4cca7fd1febce67f58",
+      "name": "Progress Software Corp.",
+      "title": "Progress Software Corp.",
+      "cusip": "743312100",
+      "lei": "549300R65B3JG6972S24",
+      "isin": [
+        "US7433121008"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "743312100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "162585.00000000",
+      "market_value_usd": "8374753.35000000",
+      "weight_pct": "0.084678219061",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 90,
+      "source_row_sha256": "dca6fbb17edef569a3fcf6c26dd28823a875a708437e982b687a15bf07595ef1",
+      "name": "N/A",
+      "title": "E-Mini Technology Select Sector Index",
+      "cusip": null,
+      "lei": null,
+      "isin": [],
+      "ticker": [],
+      "other": [
+        {
+          "value": "IXTM52027",
+          "type": "Inhouse Asset ID"
+        },
+        {
+          "value": "IXTM5 Index",
+          "type": "Future Ticker"
+        }
+      ],
+      "asset_category": "DE",
+      "issuer_category": "OTHER",
+      "payoff_profile": "N/A",
+      "units": "NC",
+      "currency": "USD",
+      "balance": "29.00000000",
+      "market_value_usd": "-49112.08000000",
+      "weight_pct": "-0.00049657862",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 91,
+      "source_row_sha256": "b507c0e4fedc7e857ef53b22e0f21894b6a7aba6ed6727d7a8f81ae7a8295804",
+      "name": "Sprout Social, Inc.",
+      "title": "Sprout Social, Inc., Class A",
+      "cusip": "85209W109",
+      "lei": null,
+      "isin": [
+        "US85209W1099"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "85209W109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "191223.00000000",
+      "market_value_usd": "4204993.77000000",
+      "weight_pct": "0.042517238267",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "8796.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 92,
+      "source_row_sha256": "7a85e6bf99c8fbd5a9f62bb61a6894ec2c68d0844fb70630ab6b8f44121d0e06",
+      "name": "Microsoft Corp.",
+      "title": "Microsoft Corp.",
+      "cusip": "594918104",
+      "lei": "INR2EJN1ERAN0W5ZP974",
+      "isin": [
+        "US5949181045"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "594918104",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "2200697.00000000",
+      "market_value_usd": "826119646.83000000",
+      "weight_pct": "8.353003067909",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 93,
+      "source_row_sha256": "14f6899d24c61f85dba090d0e30ccd68f3425d4ee74a9b42ed9894ad55c7244c",
+      "name": "Nutanix, Inc.",
+      "title": "Nutanix, Inc., Class A",
+      "cusip": "67059N108",
+      "lei": "549300X7J6E8TKVIXW09",
+      "isin": [
+        "US67059N1081"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "67059N108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "936283.00000000",
+      "market_value_usd": "65361916.23000000",
+      "weight_pct": "0.660882825978",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "635271.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 94,
+      "source_row_sha256": "64ca59aeeac9d809b10dc1d35af2cfcc2aac7ebd9fd7b45f9d0f4e71281d3261",
+      "name": "Zeta Global Holdings Corp.",
+      "title": "Zeta Global Holdings Corp., Class A",
+      "cusip": "98956A105",
+      "lei": "2549008P9XSJQHGQ9S27",
+      "isin": [
+        "US98956A1051"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "98956A105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "796784.00000000",
+      "market_value_usd": "10804391.04000000",
+      "weight_pct": "0.109244601372",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "3491700.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 95,
+      "source_row_sha256": "c81323b43061a4b7cacbf719dcc30268487ef2cce0acb4a0c96dbccb050d4976",
+      "name": "Varonis Systems, Inc.",
+      "title": "Varonis Systems, Inc.",
+      "cusip": "922280102",
+      "lei": "549300SHIVNRRH7STS26",
+      "isin": [
+        "US9222801022"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "922280102",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "421901.00000000",
+      "market_value_usd": "17065895.45000000",
+      "weight_pct": "0.172555485876",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "1302490.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 96,
+      "source_row_sha256": "ca32966fc17d6a0673eb82793f998f9a16ca30fed43ffc4e622d23b3da2fa96e",
+      "name": "Klaviyo, Inc.",
+      "title": "Klaviyo, Inc., Class A",
+      "cusip": "49845K101",
+      "lei": null,
+      "isin": [
+        "US49845K1016"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "49845K101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "295720.00000000",
+      "market_value_usd": "8948487.20000000",
+      "weight_pct": "0.090479316551",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "4347635.76000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 97,
+      "source_row_sha256": "3ad83e881b15f9e37870f0655f3c829ce320f385f05eb24aaa15a9ee6e8bbcf8",
+      "name": "PROS Holdings, Inc.",
+      "title": "PROS Holdings, Inc.",
+      "cusip": "74346Y103",
+      "lei": "549300LPE1KNL5RWKQ48",
+      "isin": [
+        "US74346Y1038"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "74346Y103",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "164998.00000000",
+      "market_value_usd": "3139911.94000000",
+      "weight_pct": "0.031748057522",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 98,
+      "source_row_sha256": "2ea665e10903b3f42a84a51f038a0a59636322ec11c2d90f43b8ee5b5907609a",
+      "name": "Cipher Mining, Inc.",
+      "title": "Cipher Mining, Inc.",
+      "cusip": "17253J106",
+      "lei": null,
+      "isin": [
+        "US17253J1060"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "SBMZ86046",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "852708.00000000",
+      "market_value_usd": "1961228.40000000",
+      "weight_pct": "0.019830235129",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "139032.70000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 99,
+      "source_row_sha256": "b5f611c3caccbeff7cd61b8ee92ac35c863402387c1eae21828e4104cf5cda2e",
+      "name": "Alarm.com Holdings, Inc.",
+      "title": "Alarm.com Holdings, Inc.",
+      "cusip": "011642105",
+      "lei": "549300HIH92U1EKIHZ32",
+      "isin": [
+        "US0116421050"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "011642105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "185303.00000000",
+      "market_value_usd": "10312111.95000000",
+      "weight_pct": "0.104267103543",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 100,
+      "source_row_sha256": "0c97b1d842e7a36ac3ae6a3c2d5178ded6b9f2f60fdfd544f8a765e00cd237d0",
+      "name": "BlackRock Funds III",
+      "title": "BlackRock Cash Funds: Treasury, SL Agency Shares",
+      "cusip": "066922477",
+      "lei": "5493005PQV5UQG4OSI49",
+      "isin": [
+        "US0669224778"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "066922477",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "STIV",
+      "issuer_category": "RF",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "11635834.88000000",
+      "market_value_usd": "11635834.88000000",
+      "weight_pct": "0.117651438049",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 101,
+      "source_row_sha256": "c98f48e915e62907897ef3690e7b7217fb7b7a42c743311474e40b13f871144a",
+      "name": "LiveRamp Holdings, Inc.",
+      "title": "LiveRamp Holdings, Inc.",
+      "cusip": "53815P108",
+      "lei": "254900GXS75LG1X7RF88",
+      "isin": [
+        "US53815P1084"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "53815P108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "247497.00000000",
+      "market_value_usd": "6469571.58000000",
+      "weight_pct": "0.065414678688",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 102,
+      "source_row_sha256": "ad2395a35e50a51efcfec6cb4c9356f2d5aba764b1c8901c2968c7ad3ffef1c9",
+      "name": "Blackbaud, Inc.",
+      "title": "Blackbaud, Inc.",
+      "cusip": "09227Q100",
+      "lei": "54930056X3HKFMNG3754",
+      "isin": [
+        "US09227Q1004"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "09227Q100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "142550.00000000",
+      "market_value_usd": "8845227.50000000",
+      "weight_pct": "0.089435244310",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "837675.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 103,
+      "source_row_sha256": "5cf92faafee36fc5d42b70694bfcfb72100f5186442da4125c8f35d2b124aa19",
+      "name": "Braze, Inc.",
+      "title": "Braze, Inc., Class A",
+      "cusip": "10576N102",
+      "lei": "9845007B9EDBFD37C277",
+      "isin": [
+        "US10576N1028"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "10576N102",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "255827.00000000",
+      "market_value_usd": "9230238.16000000",
+      "weight_pct": "0.093328137109",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 104,
+      "source_row_sha256": "0dd4d40812e5306a4426e55d46d2e6eeeff07deaaf52102fe33d809871087752",
+      "name": "Tyler Technologies, Inc.",
+      "title": "Tyler Technologies, Inc.",
+      "cusip": "902252105",
+      "lei": "25490040SMU4Z8LBCW70",
+      "isin": [
+        "US9022521051"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "902252105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "160830.00000000",
+      "market_value_usd": "93504953.70000000",
+      "weight_pct": "0.945440733818",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 105,
+      "source_row_sha256": "cf85867fd9e4ebe71534f3b28cc02ecd86e31afee1c018ec78647528ec38b9f5",
+      "name": "MARA Holdings, Inc.",
+      "title": "MARA Holdings, Inc.",
+      "cusip": "565788106",
+      "lei": "549300M8ISKPTX2W7F94",
+      "isin": [
+        "US5657881067"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "565788106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1272555.00000000",
+      "market_value_usd": "14634382.50000000",
+      "weight_pct": "0.147970142567",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "14501074.50000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 106,
+      "source_row_sha256": "12265311de4a499d95da9cc458b79c09147288aff9bf764e8eab6a21680e8f60",
+      "name": "Zoom Communications, Inc.",
+      "title": "Zoom Communications, Inc., Class A",
+      "cusip": "98980L101",
+      "lei": "549300T9GCHU0ODOM055",
+      "isin": [
+        "US98980L1017"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "98980L101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "984852.00000000",
+      "market_value_usd": "72652532.04000000",
+      "weight_pct": "0.734599189536",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "464751.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 107,
+      "source_row_sha256": "084c5c7a7453a8258eb266795ef79f2c927716ee3d38e98abf72b4d5c32585c7",
+      "name": "DocuSign, Inc.",
+      "title": "DocuSign, Inc.",
+      "cusip": "256163106",
+      "lei": "549300Q7PVDWRZ39JG09",
+      "isin": [
+        "US2561631068"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "256163106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "759124.00000000",
+      "market_value_usd": "61792693.60000000",
+      "weight_pct": "0.624793952299",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "284900.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 108,
+      "source_row_sha256": "ff64c069e27d467bb51ca36ce1a1e37d482bf944a960468ce2cc6a255aa3473a",
+      "name": "MicroStrategy, Inc.",
+      "title": "MicroStrategy, Inc., Class A",
+      "cusip": "594972408",
+      "lei": "549300WQTWEJUEHXQX21",
+      "isin": [
+        "US5949724083"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "594972408",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "895521.00000000",
+      "market_value_usd": "258151838.67000000",
+      "weight_pct": "2.610206776550",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "194645092.86000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 109,
+      "source_row_sha256": "82ad5af8ba114332d858978e7d3700b04e3764d1df5850d34cfa93e7f89f3645",
+      "name": "Synopsys, Inc.",
+      "title": "Synopsys, Inc.",
+      "cusip": "871607107",
+      "lei": "QG7T915N9S0NY5UKNE63",
+      "isin": [
+        "US8716071076"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "871607107",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "580842.00000000",
+      "market_value_usd": "249094091.70000000",
+      "weight_pct": "2.518622720270",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 110,
+      "source_row_sha256": "8448f2b22ad2758f0c5929f061b0fb0428f8ab0bb87c9eb5587d066e4ea47f97",
+      "name": "Commvault Systems, Inc.",
+      "title": "Commvault Systems, Inc.",
+      "cusip": "204166102",
+      "lei": "65T5VRP62VXG39YFML83",
+      "isin": [
+        "US2041661024"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "204166102",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "165571.00000000",
+      "market_value_usd": "26120480.96000000",
+      "weight_pct": "0.264107576222",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 111,
+      "source_row_sha256": "49c8cac28cf6612a272ee643e13abd135f937a3f53eac055097488f97e22f0b2",
+      "name": "Q2 Holdings, Inc.",
+      "title": "Q2 Holdings, Inc.",
+      "cusip": "74736L109",
+      "lei": "549300M9RKR9DZXWS696",
+      "isin": [
+        "US74736L1098"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "74736L109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "227639.00000000",
+      "market_value_usd": "18213396.39000000",
+      "weight_pct": "0.184158016948",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 112,
+      "source_row_sha256": "9b2935e1dc16074615aed9ea6fff26fb36e8a785931386cd54cc794d66e094dc",
+      "name": "Meridianlink, Inc.",
+      "title": "Meridianlink, Inc.",
+      "cusip": "58985J105",
+      "lei": null,
+      "isin": [
+        "US58985J1051"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "58985J105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "97292.00000000",
+      "market_value_usd": "1802820.76000000",
+      "weight_pct": "0.018228554903",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 113,
+      "source_row_sha256": "8030f7ffcf3017b3885598f6fd0220b15db3df833ecba23c89e9c0bfaae173c1",
+      "name": "Electronic Arts, Inc.",
+      "title": "Electronic Arts, Inc.",
+      "cusip": "285512109",
+      "lei": "549300O7A67PUEYKDL45",
+      "isin": [
+        "US2855121099"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "285512109",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "891175.00000000",
+      "market_value_usd": "128792611.00000000",
+      "weight_pct": "1.302238820896",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 114,
+      "source_row_sha256": "2a56ab3929293fa4d31a58d0a3d170e30ded36fa2106b1fe1d4d3c4e1f3f07d4",
+      "name": "N-able, Inc.",
+      "title": "N-able, Inc.",
+      "cusip": "62878D100",
+      "lei": null,
+      "isin": [
+        "US62878D1000"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "62878D100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "259650.00000000",
+      "market_value_usd": "1840918.50000000",
+      "weight_pct": "0.018613766101",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 115,
+      "source_row_sha256": "9ab7fbfcf6880fa5833628b0ac53e70493933a9ba60b3e590c2e4275463ba57a",
+      "name": "Alkami Technology, Inc.",
+      "title": "Alkami Technology, Inc.",
+      "cusip": "01644J108",
+      "lei": "254900FCNYU4HNEV9L47",
+      "isin": [
+        "US01644J1088"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "01644J108",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "251351.00000000",
+      "market_value_usd": "6597963.75000000",
+      "weight_pct": "0.066712868598",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "3740625.00000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 116,
+      "source_row_sha256": "23635ec3fcaa399266fec3568d1083d72759b4f34b78a096a83b90542743ad08",
+      "name": "Salesforce, Inc.",
+      "title": "Salesforce, Inc.",
+      "cusip": "79466L302",
+      "lei": "RCGZFPDMRW58VJ54VR07",
+      "isin": [
+        "US79466L3024"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "79466L302",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "3067468.00000000",
+      "market_value_usd": "823185712.48000000",
+      "weight_pct": "8.323337676557",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": false,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": null,
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 117,
+      "source_row_sha256": "41e185e9cb324f52bedf056e597c2be11b4d9aa9c4c517415c41cdd5009aff99",
+      "name": "SoundHound AI, Inc.",
+      "title": "SoundHound AI, Inc., Class A",
+      "cusip": "836100107",
+      "lei": null,
+      "isin": [
+        "US8361001071"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "836100107",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1352843.00000000",
+      "market_value_usd": "10985085.16000000",
+      "weight_pct": "0.111071623093",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "10885022.40000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 118,
+      "source_row_sha256": "5860624d3f1b3dafd37ccf3edc1005acdda4626cbd2ffaa08217012a5d2218dd",
+      "name": "Workday, Inc.",
+      "title": "Workday, Inc., Class A",
+      "cusip": "98138H101",
+      "lei": "549300J0DYC0N31V7G13",
+      "isin": [
+        "US98138H1014"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "98138H101",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "804136.00000000",
+      "market_value_usd": "187789880.08000000",
+      "weight_pct": "1.898767872728",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "6776106.48000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 119,
+      "source_row_sha256": "13cd0c0236a7cfc4fbf61d22b1adf714c086ee73f3c537c67515e4e15f7a60fb",
+      "name": "CCC Intelligent Solutions Holdings, Inc.",
+      "title": "CCC Intelligent Solutions Holdings, Inc.",
+      "cusip": "12510Q100",
+      "lei": null,
+      "isin": [
+        "US12510Q1004"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "12510Q100",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "1777149.00000000",
+      "market_value_usd": "16047655.47000000",
+      "weight_pct": "0.162259929161",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "12604679.01000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 120,
+      "source_row_sha256": "92e239efe9f7839dfb1c5cbdedc4092cf9b31ea4024e4174b7d49fe102be1675",
+      "name": "Snap, Inc.",
+      "title": "Snap, Inc., Class A",
+      "cusip": "83304A106",
+      "lei": "549300JNC0L6VP8A2Q35",
+      "isin": [
+        "US83304A1060"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "83304A106",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "4066300.00000000",
+      "market_value_usd": "35417473.00000000",
+      "weight_pct": "0.358110670484",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "28341425.45000000",
+        "non_cash_collateral_value_usd": null
+      }
+    },
+    {
+      "source_row": 121,
+      "source_row_sha256": "93ece8a1c816fd2be27c3b88d2b82bf351c073942d82ee1ea438775675b1e43e",
+      "name": "Palo Alto Networks, Inc.",
+      "title": "Palo Alto Networks, Inc.",
+      "cusip": "697435105",
+      "lei": "549300QXR2YVZV231H43",
+      "isin": [
+        "US6974351057"
+      ],
+      "ticker": [],
+      "other": [
+        {
+          "value": "697435105",
+          "type": "Inhouse Asset ID"
+        }
+      ],
+      "asset_category": "EC",
+      "issuer_category": "CORP",
+      "payoff_profile": "Long",
+      "units": "NS",
+      "currency": "USD",
+      "balance": "2487903.00000000",
+      "market_value_usd": "424535767.92000000",
+      "weight_pct": "4.292536299651",
+      "security_lending": {
+        "cash_collateral_value_usd": null,
+        "is_cash_collateral": false,
+        "is_loan_by_fund": true,
+        "is_non_cash_collateral": false,
+        "loan_value_usd": "17089425.36000000",
+        "non_cash_collateral_value_usd": null
+      }
+    }
+  ],
+  "provenance": {
+    "accession": "0001752724-25-119782",
+    "form": "NPORT-P",
+    "filing_date": "2025-05-27",
+    "accepted_at_utc": "2025-05-27T14:41:09Z",
+    "source_url": "https://www.sec.gov/Archives/edgar/data/1100663/000175272425119782/primary_doc.xml",
+    "filing_url": "https://www.sec.gov/Archives/edgar/data/1100663/000175272425119782/0001752724-25-119782-index.html",
+    "filing_index_sha256": "c231dc1c3b9199e5658ccf298790a58859860b853035eb0541a01349a06b314b",
+    "retrieved_at_utc": "2026-09-26T22:53:56.530933Z",
+    "source_sha256": "2abc74661d98140fd53df3cc8330419c99f091d879fcc592d665ae7c1d11416f"
+  }
+}

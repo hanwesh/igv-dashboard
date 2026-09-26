@@ -1,543 +1,78 @@
 #!/usr/bin/env python3
-"""Strict, permission-gated IGV archive and native dashboard builder.
-
-No market data ships with this code. Tests inject independently generated data;
-the network entry point is disabled unless permission and context gates pass.
-"""
+"""SEC-only quarterly IGV archive and native dashboard. No local price feed."""
 
 from __future__ import annotations
 
 import argparse
-import calendar
 import csv
-import hashlib
 import html
 import io
 import json
-import math
 import os
 import re
 import sys
 import tempfile
-import time
-from collections.abc import Callable, Mapping
-from datetime import UTC, date, datetime, timedelta
-from functools import lru_cache
-from importlib.metadata import version
+from collections.abc import Callable
+from datetime import datetime, timedelta
 from pathlib import Path
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
-from zoneinfo import ZoneInfo
 
-import exchange_calendars as xcals
+from sec_nport import (
+    FUND_NAME,
+    MAPPING_URL,
+    PRODUCTION,
+    SOURCE,
+    SYMBOL,
+    SYNTHETIC,
+    BlockedError,
+    DataError,
+    SECClient,
+    check_hash,
+    decimal,
+    decode_json,
+    digest,
+    discover_filings,
+    filing_url,
+    index_metadata,
+    json_bytes,
+    month_end,
+    month_shift,
+    normalize_filing,
+    parse_date,
+    parse_utc,
+    ranked_snapshot,
+    require_publication,
+    resolve_identity,
+    utc_now,
+    utc_text,
+    validate_identity,
+    validate_snapshot,
+)
 
 ROOT = Path(__file__).resolve().parent
-NY = ZoneInfo("America/New_York")
-MONTH_COUNT = 60
-PRODUCT_ID = 239771
-SYMBOL = "IGV"
-PRODUCTION = "production"
-SYNTHETIC = "synthetic-test-only"
-REPOSITORY = "hanwesh/igv-dashboard"
-PRODUCT_URL = "https://www.ishares.com/us/products/239771/ishares-north-american-techsoftware-etf"
-HOLDINGS_API = (
-    "https://www.blackrock.com/varnish-api/blk-one01-product-data/"
-    "product-data/api/v2/get-product-data"
-)
-PRICE_API = "https://query1.finance.yahoo.com/v8/finance/chart/IGV"
-FIELDS = {
-    "ticker": "ticker",
-    "name": "issueName",
-    "weight_pct": "holdingPercent",
-    "asset_class": "assetClass",
-    "market_value_usd": "marketValue",
-    "isin": "isin",
-    "cusip": "cusip",
+QUARTER_COUNT = 20
+PUBLICATION_LAG_DAYS = 60
+PUBLICATION_GRACE_DAYS = 7
+MANIFEST_KEYS = {
+    "schema_version",
+    "data_kind",
+    "source",
+    "identity",
+    "discovery_start_date",
+    "last_successful_data_refresh_utc",
+    "data_through",
+    "filings",
+    "quarters",
 }
-PRICE_FIELDS = ("open", "high", "low", "close", "volume")
-PERFORMANCE_FIELDS = (
-    "month",
-    "date",
-    "open",
-    "high",
-    "low",
-    "close",
-    "previous_close",
-    "monthly_return_pct",
-    "cumulative_return_pct",
-    "volume",
-    "trading_days",
-)
-
-
-class DataError(ValueError):
-    """An archive or provider response cannot be used without guessing."""
-
-
-class BlockedError(DataError):
-    """Permission or a complete production archive is missing."""
-
-
-def utc_now() -> datetime:
-    return datetime.now(UTC)
-
-
-def utc_text(value: datetime) -> str:
-    if value.tzinfo is None:
-        raise DataError("Timestamps must include a timezone")
-    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
-
-
-def parse_utc(value: object) -> datetime:
-    if not isinstance(value, str):
-        raise DataError("Missing retrieval timestamp")
-    try:
-        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError as error:
-        raise DataError("Invalid retrieval timestamp") from error
-    if parsed.tzinfo is None or parsed.utcoffset() != timedelta(0):
-        raise DataError("Provenance timestamps must be UTC, not filesystem mtimes")
-    return parsed
-
-
-def month_start(month: str) -> date:
-    if not isinstance(month, str) or not re.fullmatch(r"\d{4}-\d{2}", month):
-        raise DataError("Months must have YYYY-MM form")
-    try:
-        return date.fromisoformat(month + "-01")
-    except ValueError as error:
-        raise DataError("Invalid calendar month") from error
-
-
-def shift_month(month: str, offset: int) -> str:
-    start = month_start(month)
-    year, zero_month = divmod(start.year * 12 + start.month - 1 + offset, 12)
-    try:
-        return date(year, zero_month + 1, 1).strftime("%Y-%m")
-    except ValueError as error:
-        raise DataError("Month outside the supported date range") from error
-
-
-def completed_month(now: datetime | None = None) -> str:
-    now = now or utc_now()
-    if now.tzinfo is None:
-        raise DataError("The refresh clock must be timezone-aware")
-    return shift_month(now.astimezone(NY).strftime("%Y-%m"), -1)
-
-
-def month_range(first: str, last: str) -> list[str]:
-    start, end = month_start(first), month_start(last)
-    count = (end.year - start.year) * 12 + end.month - start.month + 1
-    if count <= 0:
-        raise DataError("Reversed monthly range")
-    return [shift_month(first, offset) for offset in range(count)]
-
-
-def display_months(end: str) -> list[str]:
-    return month_range(shift_month(end, 1 - MONTH_COUNT), end)
-
-
-@lru_cache(maxsize=32)
-def exchange_calendar(first_year: int, last_year: int):
-    # Calendar bounds are sessions, so leave room for closed boundary dates.
-    return xcals.get_calendar("XNYS", start=f"{first_year - 1}-01-01", end=f"{last_year + 1}-12-31")
-
-
-def trading_days(first: date, last: date) -> list[date]:
-    if first > last:
-        raise DataError("Reversed trading-day range")
-    try:
-        exchange = exchange_calendar(first.year, last.year)
-        return [stamp.date() for stamp in exchange.sessions_in_range(first, last)]
-    except (ValueError, KeyError) as error:
-        raise DataError("Exchange calendar cannot cover the requested range") from error
-
-
-def snapshot_date(month: str) -> date:
-    start = month_start(month)
-    end = start.replace(day=calendar.monthrange(start.year, start.month)[1])
-    days = trading_days(start, end)
-    if not days:
-        raise DataError(f"No exchange sessions in {month}")
-    return days[-1]
-
-
-def price_bounds(end: str) -> tuple[date, date]:
-    return snapshot_date(shift_month(end, -MONTH_COUNT)), snapshot_date(end)
-
-
-def source_url(month: str, kind: str = PRODUCTION) -> str:
-    day = snapshot_date(month)
-    if kind == SYNTHETIC:
-        return f"https://example.invalid/synthetic/holdings/{day.isoformat()}"
-    return (
-        HOLDINGS_API
-        + "?"
-        + urlencode(
-            {
-                "appType": "PRODUCT_PAGE",
-                "appSubType": "ISHARES",
-                "targetSite": "us-ishares",
-                "locale": "en_US",
-                "portfolioId": str(PRODUCT_ID),
-                "userType": "individual",
-                "asOfDate": day.strftime("%Y%m%d"),
-                "component": "holdings.all",
-                "excludeContent": "true",
-            }
-        )
-    )
-
-
-def price_url(end: str, kind: str = PRODUCTION) -> str:
-    first, _ = price_bounds(end)
-    exclusive_end = month_start(shift_month(end, 1))
-    if kind == SYNTHETIC:
-        return f"https://example.invalid/synthetic/prices/{end}"
-    return (
-        PRICE_API
-        + "?"
-        + urlencode(
-            {
-                "period1": int(datetime.combine(first, datetime.min.time(), NY).timestamp()),
-                "period2": int(
-                    datetime.combine(exclusive_end, datetime.min.time(), NY).timestamp()
-                ),
-                "interval": "1d",
-                "events": "div,splits",
-                "includeAdjustedClose": "true",
-            }
-        )
-    )
-
-
-def publication_allowed(env: Mapping[str, str]) -> bool:
-    if env.get("DATA_PUBLICATION_APPROVED") != "true":
-        return False
-    if env.get("GITHUB_ACTIONS") != "true":
-        return True
-    return (
-        env.get("GITHUB_REPOSITORY") == REPOSITORY
-        and env.get("GITHUB_REF") == "refs/heads/main"
-        and env.get("GITHUB_EVENT_NAME") in {"push", "schedule", "workflow_dispatch"}
-    )
-
-
-def require_publication() -> None:
-    if not publication_allowed(os.environ):
-        raise BlockedError(
-            "CODE ONLY: production processing is disabled. Source redistribution permission "
-            "is unresolved; DATA_PUBLICATION_APPROVED must remain false until authorized. "
-            "GitHub Actions additionally requires trusted main context."
-        )
-
-
-def download(url: str, *, allow_network: bool = False) -> bytes:
-    require_publication()
-    if not allow_network:
-        raise BlockedError("Live collection requires the explicit --allow-network flag")
-    if not url.startswith((HOLDINGS_API + "?", PRICE_API + "?")):
-        raise DataError("Refusing a URL outside the implemented provider endpoints")
-    request = Request(url, headers={"User-Agent": "igv-dashboard/1.0"})
-    with urlopen(request, timeout=45) as response:
-        # Bound malformed responses without logging or persisting their contents.
-        content = response.read(32 * 1024 * 1024 + 1)
-    if len(content) > 32 * 1024 * 1024:
-        raise DataError("Provider response exceeds the size limit")
-    return content
-
-
-def json_bytes(value: object) -> bytes:
-    return (json.dumps(value, indent=2, ensure_ascii=True, allow_nan=False) + "\n").encode()
-
-
-def decode_object(content: bytes, kind: str) -> dict:
-    try:
-        value = json.loads(content)
-    except (ValueError, UnicodeDecodeError) as error:
-        raise DataError("Malformed JSON response") from error
-    if not isinstance(value, dict):
-        raise DataError("Expected a JSON object")
-    if kind not in {PRODUCTION, SYNTHETIC}:
-        raise DataError("Unknown archive data kind")
-    marked = value.get("_synthetic_test_only") is True
-    if marked != (kind == SYNTHETIC):
-        raise DataError("Synthetic/production content mismatch")
-    return value
-
-
-def finite(value: object, label: str, *, positive: bool = False) -> float | int:
-    if (
-        not isinstance(value, (int, float))
-        or isinstance(value, bool)
-        or not math.isfinite(value)
-        or (positive and value <= 0)
-    ):
-        raise DataError(f"Invalid finite numeric value: {label}")
-    return value
-
-
-def finite_sum(values, label: str) -> float:
-    try:
-        return finite(math.fsum(values), label)
-    except OverflowError as error:
-        raise DataError(f"Numeric overflow: {label}") from error
-
-
-def parse_holdings(content: bytes, month: str, kind: str = PRODUCTION) -> dict:
-    data = decode_object(content, kind)
-    if type(data.get("productId")) is not int or data["productId"] != PRODUCT_ID:
-        raise DataError(f"{month}: unexpected fund product ID")
-    day = snapshot_date(month)
-    try:
-        points = data["componentsByNameMap"]["holdings"]["containersByNameMap"]["all"][
-            "dataPointsByNameMap"
-        ]
-        actual = points["asOfDate"]["value"]
-        if type(actual) is not int or actual != int(day.strftime("%Y%m%d")):
-            raise DataError(
-                f"{month}: requested {day}, received a mismatched as-of date; "
-                "refusing a stale/latest-date fallback"
-            )
-        columns = {field: points[key]["value"] for field, key in FIELDS.items()}
-    except (KeyError, TypeError) as error:
-        raise DataError(f"{month}: missing holdings columns or dated schema") from error
-    if any(not isinstance(values, list) or len(values) < 10 for values in columns.values()):
-        raise DataError(f"{month}: missing, empty or short holdings columns")
-    if len({len(values) for values in columns.values()}) != 1:
-        raise DataError(f"{month}: misaligned holdings columns")
-    rows = [
-        {field: values[index] for field, values in columns.items()}
-        for index in range(len(columns["ticker"]))
-    ]
-    for row in rows:
-        for field in ("weight_pct", "market_value_usd"):
-            finite(row[field], field)
-        for field in ("ticker", "name", "asset_class", "isin", "cusip"):
-            if row[field] is not None and not isinstance(row[field], str):
-                raise DataError(f"{month}: invalid text field {field}")
-    ranked = sorted(
-        rows,
-        key=lambda row: (-row["weight_pct"], -row["market_value_usd"], row["ticker"] or ""),
-    )
-    top = ranked[:10]
-    if any(
-        not isinstance(row["ticker"], str)
-        or not row["ticker"].strip()
-        or not isinstance(row["name"], str)
-        or not row["name"].strip()
-        or row["weight_pct"] <= 0
-        for row in top
-    ):
-        raise DataError(f"{month}: incomplete top-ten holding")
-    if len({row["isin"] or row["cusip"] or row["ticker"] for row in top}) != 10:
-        raise DataError(f"{month}: duplicated top-ten security")
-    for rank, row in enumerate(top, 1):
-        row["rank"] = rank
-    total = finite_sum((row["weight_pct"] for row in rows), "portfolio weight total")
-    notes = []
-    if abs(total - 100) > 0.005:
-        notes.append(
-            f"Full published position weights sum to {total:.10g}%, not 100%. "
-            "Weights are retained as supplied, without normalization."
-        )
-    return {
-        "month": month,
-        "snapshot_date": day.isoformat(),
-        "holding_count": len(rows),
-        "portfolio_weight_total_pct": total,
-        "quality_notes": notes,
-        "top10_weight_pct": finite_sum((row["weight_pct"] for row in top), "top-ten weight total"),
-        "top10": top,
-    }
-
-
-def timestamp_day(value: object) -> date:
-    finite(value, "timestamp")
-    try:
-        return datetime.fromtimestamp(value, NY).date()
-    except (OverflowError, OSError, ValueError) as error:
-        raise DataError("Invalid source timestamp") from error
-
-
-def parse_prices(content: bytes, end: str, kind: str = PRODUCTION) -> dict:
-    response = decode_object(content, kind)
-    try:
-        chart = response["chart"]
-        if chart["error"] is not None or len(chart["result"]) != 1:
-            raise DataError("Historical-price source returned an error or empty result")
-        result = chart["result"][0]
-        meta = result["meta"]
-        if meta["symbol"] != SYMBOL or meta["currency"] != "USD":
-            raise DataError("Historical-price source has an unexpected symbol or currency")
-        timestamps = result["timestamp"]
-        indicators = result["indicators"]
-        if any(
-            not isinstance(indicators[key], list) or len(indicators[key]) != 1
-            for key in ("quote", "adjclose")
-        ):
-            raise DataError("Expected one coherent daily price series")
-        quote = indicators["quote"][0]
-        adjusted = indicators["adjclose"][0]["adjclose"]
-        arrays = [quote[field] for field in PRICE_FIELDS] + [adjusted]
-        if (
-            not isinstance(timestamps, list)
-            or not timestamps
-            or any(
-                not isinstance(values, list) or len(values) != len(timestamps) for values in arrays
-            )
-        ):
-            raise DataError("Historical-price columns are empty or have different lengths")
-    except (KeyError, TypeError, IndexError) as error:
-        raise DataError("Missing historical-price schema") from error
-    days = []
-    for index, timestamp in enumerate(timestamps):
-        day = timestamp_day(timestamp)
-        if days and day.isoformat() <= days[-1]["date"]:
-            raise DataError("Historical-price dates are duplicated or out of order")
-        row = {field: quote[field][index] for field in PRICE_FIELDS}
-        for field in ("open", "high", "low", "close"):
-            finite(row[field], field, positive=True)
-        volume = finite(row["volume"], "volume")
-        if volume < 0 or int(volume) != volume:
-            raise DataError("Volume must be a nonnegative integer")
-        finite(adjusted[index], "adjclose", positive=True)
-        if (
-            not row["low"]
-            <= min(row["open"], row["close"])
-            <= max(row["open"], row["close"])
-            <= row["high"]
-        ):
-            raise DataError(f"Inconsistent OHLC prices on {day}")
-        days.append({"date": day.isoformat(), **row})
-    first, last = price_bounds(end)
-    expected = [day.isoformat() for day in trading_days(first, last)]
-    actual = [row["date"] for row in days]
-    if actual != expected:
-        missing, extra = sorted(set(expected) - set(actual)), sorted(set(actual) - set(expected))
-        raise DataError(
-            "Price coverage must include every exchange session and the prior month-end "
-            f"baseline; missing={','.join(missing[:5]) or 'none'}, "
-            f"unexpected={','.join(extra[:5]) or 'none'}"
-        )
-    splits, dividends = {}, set()
-    try:
-        events = result.get("events", {})
-        if not isinstance(events, dict):
-            raise DataError("Malformed corporate-action events")
-        split_events = events.get("splits", {})
-        if not isinstance(split_events, dict):
-            raise DataError("Malformed split events")
-        for event in split_events.values():
-            split_day = timestamp_day(event["date"]).isoformat()
-            numerator = finite(event["numerator"], "split numerator", positive=True)
-            denominator = finite(event["denominator"], "split denominator", positive=True)
-            ratio = numerator / denominator
-            finite(ratio, "split ratio", positive=True)
-            if "splitRatio" in event:
-                left, right = event["splitRatio"].split(":")
-                declared = float(left) / float(right)
-                if not math.isclose(ratio, declared, rel_tol=1e-9):
-                    raise DataError("Split ratio fields disagree")
-            if split_day not in expected or split_day in splits:
-                raise DataError("Split event has a duplicate or out-of-window date")
-            splits[split_day] = ratio
-        dividend_events = events.get("dividends", {})
-        if not isinstance(dividend_events, dict):
-            raise DataError("Malformed dividend events")
-        for event in dividend_events.values():
-            event_day = timestamp_day(event["date"]).isoformat()
-            amount = finite(event["amount"], "dividend amount")
-            if amount < 0 or event_day not in expected or event_day in dividends:
-                raise DataError("Dividend event has an invalid amount or date")
-            dividends.add(event_day)
-    except (KeyError, TypeError, ValueError, ZeroDivisionError, AttributeError) as error:
-        raise DataError("Invalid corporate-action event") from error
-    factors = [
-        finite(adjusted[index] / row["close"], "adjusted/quote ratio", positive=True)
-        for index, row in enumerate(days)
-    ]
-    for index, row in enumerate(days[1:], 1):
-        if row["date"] in dividends:
-            if row["date"] in splits:
-                raise DataError("Same-day split/dividend basis needs manual source verification")
-            continue
-        if not math.isclose(factors[index], factors[index - 1], rel_tol=2e-4):
-            raise DataError(
-                "Mixed price adjustment basis: adjusted/quote ratio changed without a "
-                "cash distribution. Refusing potentially unadjusted split prices."
-            )
-    return {"days": days, "splits": splits, "through_month": end}
-
-
-def check_price_revision(previous: dict, current: dict) -> None:
-    old_rows = {row["date"]: row for row in previous["days"]}
-    old_splits, new_splits = previous["splits"], current["splits"]
-    first = current["days"][0]["date"]
-    old_last = previous["days"][-1]["date"]
-    if first > old_last:
-        raise DataError("Price windows do not overlap; intermediate history is required")
-    for day, ratio in old_splits.items():
-        if first <= day <= old_last and new_splits.get(day) != ratio:
-            raise DataError("A previously recorded split was removed or revised")
-    additions = {day: ratio for day, ratio in new_splits.items() if day not in old_splits}
-    if any(day <= old_last for day in additions):
-        raise DataError("Unexplained retrospective split event; manual investigation required")
-    for row in current["days"]:
-        old = old_rows.get(row["date"])
-        if old is None:
-            continue
-        factor = math.prod(ratio for day, ratio in additions.items() if row["date"] < day)
-        finite(factor, "cumulative split ratio", positive=True)
-        for field in ("open", "high", "low", "close"):
-            if not math.isclose(row[field], old[field] / factor, rel_tol=1e-5, abs_tol=1e-6):
-                raise DataError(
-                    "Incoherent historical price adjustment or unexplained revision: "
-                    f"{row['date']} {field}. Refusing to splice price bases."
-                )
-
-
-def performance_series(snapshots: list[dict], prices: dict) -> list[dict]:
-    days = prices["days"]
-    baseline = previous = days[0]
-    by_month: dict[str, list[dict]] = {}
-    for row in days[1:]:
-        by_month.setdefault(row["date"][:7], []).append(row)
-    series = []
-    for item in snapshots:
-        month_days = by_month.get(item["month"], [])
-        if not month_days or month_days[-1]["date"] != item["snapshot_date"]:
-            raise DataError(f"Price/holdings month-end mismatch for {item['month']}")
-        last = month_days[-1]
-        series.append(
-            {
-                "month": item["month"],
-                "date": last["date"],
-                "open": month_days[0]["open"],
-                "high": max(row["high"] for row in month_days),
-                "low": min(row["low"] for row in month_days),
-                "close": last["close"],
-                "previous_close": previous["close"],
-                "monthly_return_pct": (last["close"] / previous["close"] - 1) * 100,
-                "cumulative_return_pct": (last["close"] / baseline["close"] - 1) * 100,
-                "volume": sum(row["volume"] for row in month_days),
-                "trading_days": len(month_days),
-            }
-        )
-        for field in PERFORMANCE_FIELDS[2:]:
-            finite(series[-1][field], f"monthly {field}")
-        previous = last
-    return series
 
 
 def object_path(root: Path, entry: dict) -> Path:
-    digest = entry.get("sha256")
-    if not isinstance(digest, str) or not re.fullmatch(r"[a-f0-9]{64}", digest):
-        raise DataError("Invalid provenance SHA256")
-    relative = f"objects/{digest}.json"
-    if entry.get("object") != relative:
-        raise DataError("Invalid immutable archive object path")
+    if not isinstance(entry, dict) or set(entry) != {"object", "sha256"}:
+        raise DataError("Invalid normalized object reference")
+    digest_value = entry["sha256"]
+    check_hash(digest_value)
+    relative = f"objects/{digest_value}.json"
+    if entry["object"] != relative:
+        raise DataError("Invalid immutable object path")
     path = root / relative
     if path.is_symlink() or path.parent.resolve() != root.resolve() / "objects":
         raise DataError("Archive objects must not be symlinks or external paths")
@@ -550,16 +85,44 @@ def read_manifest(root: Path) -> dict:
         raise DataError("The manifest must not be a symlink")
     if not path.is_file():
         raise BlockedError(
-            "No complete authorized archive: data/ contains schema only. "
-            "Refusing to create a real-looking dashboard or substitute synthetic data."
+            "No verified SEC factual archive. Build/deployment is blocked; "
+            "synthetic fixtures are never a production fallback."
         )
-    try:
-        manifest = json.loads(path.read_bytes())
-    except (ValueError, UnicodeDecodeError) as error:
-        raise DataError("Malformed archive manifest") from error
-    if not isinstance(manifest, dict):
-        raise DataError("Invalid archive manifest")
-    return manifest
+    return decode_json(path.read_bytes())
+
+
+def active_quarters(snapshots: dict[str, dict]) -> dict[str, str]:
+    grouped: dict[str, list[dict]] = {}
+    for item in snapshots.values():
+        if item["fiscal_quarter"] is not None:
+            grouped.setdefault(item["reported_as_of"][:7], []).append(item)
+    selected = {}
+    for period, candidates in sorted(grouped.items()):
+        dates = {item["reported_as_of"] for item in candidates}
+        fiscal_ends = {item["fiscal_year_end"] for item in candidates}
+        if len(dates) != 1 or len(fiscal_ends) != 1:
+            raise DataError("Conflicting reported/fiscal dates for one quarter require review")
+        ordered = sorted(
+            candidates,
+            key=lambda item: (
+                parse_utc(item["provenance"]["accepted_at_utc"]),
+                item["provenance"]["accession"],
+            ),
+        )
+        originals = [item for item in ordered if item["provenance"]["form"] == "NPORT-P"]
+        if len(originals) != 1:
+            raise DataError("Quarter needs one original NPORT-P, with any subsequent amendments")
+        if ordered[0] is not originals[0]:
+            raise DataError("An amendment predates the quarter's original filing")
+        selected[period] = ordered[-1]["provenance"]["accession"]
+    return selected
+
+
+def stale_after(reported_as_of: str) -> str:
+    next_quarter_end = month_end(month_shift(parse_date(reported_as_of), 3))
+    return (
+        next_quarter_end + timedelta(days=PUBLICATION_LAG_DAYS + PUBLICATION_GRACE_DAYS)
+    ).isoformat()
 
 
 def validate_manifest(
@@ -571,162 +134,116 @@ def validate_manifest(
     require_current: bool = True,
     pending: dict[str, bytes] | None = None,
 ) -> dict:
+    now = now or utc_now()
+    if now.tzinfo is None:
+        raise DataError("Validation requires a timezone-aware clock")
+    if kind not in {PRODUCTION, SYNTHETIC}:
+        raise DataError("Unrecognized archive kind")
     pending = pending or {}
-    calendar_info = manifest.get("calendar")
     if (
-        type(manifest.get("schema_version")) is not int
-        or manifest["schema_version"] != 1
-        or manifest.get("data_kind") != kind
-        or manifest.get("ticker") != SYMBOL
-        or type(manifest.get("product_id")) is not int
-        or manifest.get("product_id") != PRODUCT_ID
-        or not isinstance(calendar_info, dict)
-        or calendar_info.get("name") != "XNYS"
-        or calendar_info.get("library") != "exchange-calendars"
-        or not isinstance(calendar_info.get("version"), str)
-        or not calendar_info["version"]
+        not isinstance(manifest, dict)
+        or set(manifest) != MANIFEST_KEYS
+        or type(manifest["schema_version"]) is not int
+        or manifest["schema_version"] != 2
+        or manifest["data_kind"] != kind
+        or manifest["source"] != SOURCE
     ):
-        raise DataError("Archive schema, identity, calendar or data kind mismatch")
-    end = manifest.get("data_through")
-    month_start(end)
-    latest = completed_month(now)
-    if end > latest:
-        raise DataError("Archive includes an unfinished or future month")
-    if require_current and end != latest:
-        raise DataError(f"Stale archive: data through {end}; latest completed month is {latest}")
-    refreshed = parse_utc(manifest.get("last_successful_data_refresh_utc"))
-    if refreshed > (now or utc_now()).astimezone(UTC):
-        raise DataError("Archive refresh timestamp is in the future")
-    holdings, price_entries = manifest.get("holdings"), manifest.get("prices")
-    if not isinstance(holdings, dict) or len(holdings) < MONTH_COUNT:
-        raise DataError("A complete archive needs at least 60 monthly holdings snapshots")
-    months = sorted(holdings)
-    if months != month_range(months[0], end):
-        raise DataError("Archive has missing, duplicate or out-of-range holdings months")
-    if not isinstance(price_entries, dict) or end not in price_entries:
-        raise DataError("Missing coherent price archive for the latest holdings window")
-    if any(month not in holdings for month in price_entries):
-        raise DataError("Price archive has an unrecognized month")
-    if min(price_entries) != shift_month(months[0], MONTH_COUNT - 1):
-        raise DataError("Price archive must cover the earliest retained holdings window")
-
-    def content(entry: dict, expected_url: str) -> bytes:
-        if not isinstance(entry, dict):
-            raise DataError("Malformed provenance entry")
+        raise DataError("SEC-only manifest schema/source/data kind mismatch; legacy data rejected")
+    identity = manifest["identity"]
+    validate_identity(identity, now, kind)
+    refreshed = parse_utc(manifest["last_successful_data_refresh_utc"])
+    if refreshed > now or parse_utc(identity["resolved_at_utc"]) > refreshed:
+        raise DataError("Invalid successful data refresh timestamp")
+    start = parse_date(manifest["discovery_start_date"])
+    if start > refreshed.date():
+        raise DataError("Invalid discovery start date")
+    entries = manifest["filings"]
+    if not isinstance(entries, dict) or not entries:
+        raise DataError("Missing normalized SEC filings")
+    snapshots, hashes = {}, {}
+    for accession, entry in entries.items():
         path = object_path(root, entry)
-        raw = pending[entry["sha256"]] if entry["sha256"] in pending else path.read_bytes()
-        if hashlib.sha256(raw).hexdigest() != entry["sha256"]:
-            raise DataError("Archive object SHA256 mismatch")
-        if entry.get("source_url") != expected_url:
-            raise DataError("Provenance source URL does not match the requested source")
-        retrieved = parse_utc(entry.get("retrieved_at_utc"))
-        if retrieved > refreshed:
-            raise DataError("Retrieval time is later than the successful archive refresh")
-        return raw
-
-    parsed_holdings = {}
-    for month in months:
-        entry = holdings[month]
-        raw = content(entry, source_url(month, kind))
-        expected_date = snapshot_date(month).isoformat()
-        if entry.get("requested_date") != expected_date or entry.get("as_of_date") != expected_date:
-            raise DataError("Holdings provenance date mismatch")
-        if parse_utc(entry["retrieved_at_utc"]).astimezone(NY).date().isoformat() < expected_date:
-            raise DataError("Holdings retrieval predates the reported snapshot")
-        item = parse_holdings(raw, month, kind)
-        parsed_holdings[month] = {
-            **item,
-            "source_url": entry["source_url"],
-            "source_sha256": entry["sha256"],
-            "retrieved_at_utc": entry["retrieved_at_utc"],
-        }
-    current_prices = None
-    previous_prices = None
-    for month in sorted(price_entries):
-        entry = price_entries[month]
-        raw = content(entry, price_url(month, kind))
-        first, last = price_bounds(month)
-        if (
-            entry.get("requested_start_date") != first.isoformat()
-            or entry.get("requested_end_date") != last.isoformat()
-            or entry.get("as_of_date") != last.isoformat()
-            or entry.get("price_basis") != "provider-split-adjusted-quote"
-        ):
-            raise DataError("Price provenance dates or adjustment basis mismatch")
-        parsed = parse_prices(raw, month, kind)
-        if previous_prices is not None:
-            check_price_revision(previous_prices, parsed)
-        previous_prices = parsed
-        if month == end:
-            current_prices = parsed
-    snapshots = [parsed_holdings[month] for month in display_months(end)]
-    if current_prices is None:
-        raise DataError("Missing active price window")
-    series = performance_series(snapshots, current_prices)
-    if len(snapshots) != 60 or sum(len(item["top10"]) for item in snapshots) != 600:
-        raise DataError("Report must contain 60 months and 600 top-ten records")
-    return {"snapshots": snapshots, "prices": current_prices, "series": series}
-
-
-def fetch_validated(
-    fetcher: Callable[[str], bytes],
-    url: str,
-    parse: Callable[[bytes], dict],
-    *,
-    attempts: int = 3,
-    sleep: Callable[[float], None] = time.sleep,
-) -> tuple[bytes, dict]:
-    for attempt in range(attempts):
         try:
-            raw = fetcher(url)
-            return raw, parse(raw)
-        except HTTPError as error:
-            if error.code not in {408, 429, 500, 502, 503, 504}:
-                raise DataError(f"Provider HTTP {error.code}; no alternative date used") from error
-            failure = error
-        except (DataError, URLError, TimeoutError, ConnectionError) as error:
-            failure = error
-        if attempt + 1 < attempts:
-            print(f"Source attempt {attempt + 1} rejected; retrying exact request", file=sys.stderr)
-            sleep(2**attempt)
-    raise DataError(
-        f"Source unavailable or invalid after {attempts} attempts: {failure}. "
-        "Last-good archive retained; retry after the issuer publishes the exact snapshot."
-    ) from failure
-
-
-def provenance(raw: bytes, url: str, retrieved: datetime, **dates: str) -> dict:
-    digest = hashlib.sha256(raw).hexdigest()
+            raw = pending[entry["sha256"]] if entry["sha256"] in pending else path.read_bytes()
+        except FileNotFoundError as error:
+            raise DataError("Missing normalized SEC object") from error
+        if digest(raw) != entry["sha256"]:
+            raise DataError("Normalized object SHA256 mismatch")
+        item = decode_json(raw)
+        if json_bytes(item) != raw:
+            raise DataError("SEC facts must use the canonical normalized JSON format")
+        validate_snapshot(item, identity, refreshed, kind)
+        if item["provenance"]["accession"] != accession:
+            raise DataError("Manifest accession does not match normalized source provenance")
+        if parse_date(item["provenance"]["filing_date"]) < start:
+            raise DataError("Filing precedes the declared discovery range")
+        snapshots[accession], hashes[accession] = item, entry["sha256"]
+    quarters = active_quarters(snapshots)
+    if quarters != manifest["quarters"]:
+        raise DataError("Active quarters do not select the latest appropriate SEC amendments")
+    if len(quarters) < QUARTER_COUNT:
+        raise DataError(
+            f"Need {QUARTER_COUNT} reported fiscal quarters; only {len(quarters)} available"
+        )
+    periods = sorted(quarters)[-QUARTER_COUNT:]
+    for previous, current in zip(periods, periods[1:]):
+        if month_shift(parse_date(previous + "-01"), 3).strftime("%Y-%m") != current:
+            raise DataError("Missing fiscal quarter in the rolling display; no forward filling")
+    displayed = [snapshots[quarters[period]] for period in periods]
+    if len({item["fiscal_year_end"][5:7] for item in displayed}) != 1:
+        raise DataError("Fiscal-year convention changed; manual cadence review required")
+    latest = displayed[-1]["reported_as_of"]
+    if manifest["data_through"] != latest:
+        raise DataError("Data-through date differs from the latest reported quarter")
+    if require_current and now.date() > parse_date(stale_after(latest)):
+        raise DataError(
+            "SEC holdings are overdue beyond the normal filing lag and grace period. "
+            "Last-good archive/site retained; investigate missing public filings."
+        )
     return {
-        "object": f"objects/{digest}.json",
-        "sha256": digest,
-        "source_url": url,
-        "retrieved_at_utc": utc_text(retrieved),
-        **dates,
+        "snapshots": [
+            {
+                **ranked_snapshot(item, hashes[item["provenance"]["accession"]]),
+                "revision_count": sum(
+                    other["reported_as_of"] == item["reported_as_of"]
+                    for other in snapshots.values()
+                ),
+            }
+            for item in displayed
+        ],
+        "all_filings": snapshots,
+        "quarter_count": len(quarters),
     }
 
 
 def promote_archive(root: Path, manifest: dict, pending: dict[str, bytes]) -> None:
+    if root.is_symlink() or (root / "manifest.json").is_symlink():
+        raise DataError("Archive promotion refuses symlinks")
     root.mkdir(parents=True, exist_ok=True)
+    if (root / "objects").is_symlink():
+        raise DataError("Archive object directory must not be a symlink")
     added = []
     committed = False
     with tempfile.TemporaryDirectory(prefix=".stage-", dir=root) as temporary:
         stage = Path(temporary)
-        for digest, raw in pending.items():
-            (stage / f"{digest}.json").write_bytes(raw)
+        for hash_value, raw in pending.items():
+            check_hash(hash_value)
+            if digest(raw) != hash_value:
+                raise DataError("Pending normalized object SHA256 mismatch")
+            (stage / f"{hash_value}.json").write_bytes(raw)
         staged_manifest = stage / "manifest.json"
         staged_manifest.write_bytes(json_bytes(manifest))
         (root / "objects").mkdir(exist_ok=True)
         try:
-            for digest, raw in pending.items():
-                target = root / "objects" / f"{digest}.json"
+            for hash_value, raw in pending.items():
+                entry = {"object": f"objects/{hash_value}.json", "sha256": hash_value}
+                target = object_path(root, entry)
                 if target.exists():
                     if target.read_bytes() != raw:
-                        raise DataError("An immutable archive object was modified")
+                        raise DataError("Immutable normalized object was modified")
                     continue
-                os.replace(stage / f"{digest}.json", target)
+                os.replace(stage / f"{hash_value}.json", target)
                 added.append(target)
-            # Readers use only this pointer. Existing objects are never overwritten.
             os.replace(staged_manifest, root / "manifest.json")
             committed = True
         finally:
@@ -741,148 +258,186 @@ def refresh_archive(
     *,
     kind: str = PRODUCTION,
     clock: Callable[[], datetime] = utc_now,
-    sleep: Callable[[float], None] = time.sleep,
+    bootstrap: bool = False,
 ) -> bool:
     if kind == PRODUCTION:
-        require_publication()
+        require_publication(os.environ)
+        if bootstrap and os.environ.get("GITHUB_ACTIONS") == "true":
+            raise BlockedError("Actions cannot bootstrap a production archive")
     elif kind != SYNTHETIC:
-        raise DataError("Unknown archive data kind")
+        raise DataError("Unrecognized archive kind")
     now = clock()
-    latest = completed_month(now)
     existing = read_manifest(root) if (root / "manifest.json").exists() else None
+    if existing is None and not bootstrap:
+        raise BlockedError(
+            "No verified SEC seed. Scheduled refresh cannot bootstrap a production dataset; "
+            "an operator must acquire, audit and commit a factual seed before activation."
+        )
     previous = None
     if existing is not None:
         previous = validate_manifest(existing, root, now=now, kind=kind, require_current=False)
-        if existing["data_through"] == latest:
-            return False
-        needed = month_range(shift_month(existing["data_through"], 1), latest)
-        manifest = json.loads(json_bytes(existing))
+        manifest = decode_json(json_bytes(existing))
     else:
-        needed = display_months(latest)
+        mapping_url = (
+            "https://example.invalid/synthetic/company_tickers_mf.json"
+            if kind == SYNTHETIC
+            else MAPPING_URL
+        )
+        mapping = fetcher(mapping_url)
+        identity = resolve_identity(mapping, clock(), kind)
         manifest = {
-            "schema_version": 1,
+            "schema_version": 2,
             "data_kind": kind,
-            "ticker": SYMBOL,
-            "product_id": PRODUCT_ID,
-            "holdings": {},
-            "prices": {},
+            "source": SOURCE,
+            "identity": identity,
+            "discovery_start_date": "2019-04-01",
+            "last_successful_data_refresh_utc": utc_text(now),
+            "data_through": "",
+            "filings": {},
+            "quarters": {},
         }
+    identity = manifest["identity"]
+    filings = discover_filings(
+        fetcher, identity, manifest["discovery_start_date"], now.date().isoformat(), kind
+    )
+    discovered = {filing.accession for filing in filings}
+    if not set(manifest["filings"]) <= discovered:
+        raise DataError("Previously archived SEC accessions disappeared from discovery")
+    if previous:
+        for filing in filings:
+            if filing.accession not in previous["all_filings"]:
+                continue
+            archived = previous["all_filings"][filing.accession]
+            provenance = archived["provenance"]
+            if (
+                filing.form != provenance["form"]
+                or filing.filing_date != provenance["filing_date"]
+                or filing.reported_date_hint != archived["reported_as_of"]
+                or filing.document_url(kind) != provenance["source_url"]
+            ):
+                raise DataError("SEC metadata changed for an immutable archived accession")
+    new_filings = [filing for filing in filings if filing.accession not in manifest["filings"]]
+    if existing is not None and not new_filings:
+        validate_manifest(existing, root, now=now, kind=kind)
+        return False
     pending = {}
-    for month in needed:
-        url = source_url(month, kind)
-        raw, _ = fetch_validated(
-            fetcher, url, lambda content: parse_holdings(content, month, kind), sleep=sleep
-        )
-        day = snapshot_date(month).isoformat()
-        entry = provenance(raw, url, clock(), requested_date=day, as_of_date=day)
-        pending[entry["sha256"]] = raw
-        manifest["holdings"][month] = entry
-    price_ends = []
-    if existing is not None:
-        boundary = shift_month(existing["data_through"], MONTH_COUNT)
-        while boundary < latest:
-            price_ends.append(boundary)
-            boundary = shift_month(boundary, MONTH_COUNT)
-    price_ends.append(latest)
-    previous_prices = previous["prices"] if previous is not None else None
-    for end in price_ends:
-        url = price_url(end, kind)
-        raw, parsed_prices = fetch_validated(
-            fetcher, url, lambda content: parse_prices(content, end, kind), sleep=sleep
-        )
-        if previous_prices is not None:
-            check_price_revision(previous_prices, parsed_prices)
-        previous_prices = parsed_prices
-        first, last = price_bounds(end)
-        entry = provenance(
-            raw,
-            url,
-            clock(),
-            requested_start_date=first.isoformat(),
-            requested_end_date=last.isoformat(),
-            as_of_date=last.isoformat(),
-            price_basis="provider-split-adjusted-quote",
-        )
-        pending[entry["sha256"]] = raw
-        manifest["prices"][end] = entry
-    manifest["data_through"] = latest
+    snapshots = previous["all_filings"] if previous else {}
+    for filing in new_filings:
+        index = fetcher(filing_url(filing.accession, kind))
+        metadata = index_metadata(index, filing, kind)
+        raw = fetcher(filing.document_url(kind))
+        normalized = normalize_filing(raw, filing, identity, metadata, clock(), kind)
+        content = json_bytes(normalized)
+        hash_value = digest(content)
+        pending[hash_value] = content
+        manifest["filings"][filing.accession] = {
+            "object": f"objects/{hash_value}.json",
+            "sha256": hash_value,
+        }
+        snapshots[filing.accession] = normalized
+    quarters = active_quarters(snapshots)
+    if not quarters:
+        raise DataError("No publicly reported fiscal-quarter portfolios found")
+    manifest["quarters"] = quarters
+    manifest["data_through"] = snapshots[quarters[max(quarters)]]["reported_as_of"]
     manifest["last_successful_data_refresh_utc"] = utc_text(clock())
-    manifest["calendar"] = {
-        "name": "XNYS",
-        "library": "exchange-calendars",
-        "version": version("exchange-calendars"),
-    }
     validate_manifest(manifest, root, now=clock(), kind=kind, pending=pending)
     promote_archive(root, manifest, pending)
     return True
 
 
+def security_groups(snapshots: list[dict]) -> list[dict]:
+    grouped: dict[str, list[tuple[str, dict]]] = {}
+    for item in snapshots:
+        for row in item["top10"]:
+            if row["cusip"]:
+                grouped.setdefault(row["cusip"], []).append((item["reported_as_of"], row))
+    result = []
+    for cusip, occurrences in grouped.items():
+        latest_date, latest = max(occurrences, key=lambda pair: (pair[0], -pair[1]["source_row"]))
+        quarters = sorted({reported for reported, _ in occurrences})
+        result.append(
+            {
+                "cusip": cusip,
+                "label": latest["title"],
+                "latest_reported_as_of": latest_date,
+                "reported_quarters": quarters,
+                "appearances": len(quarters),
+                "search_terms": sorted(
+                    {
+                        value
+                        for _, row in occurrences
+                        for value in [
+                            cusip,
+                            row["title"],
+                            row["name"],
+                            *row["ticker"],
+                            *row["isin"],
+                        ]
+                    }
+                ),
+            }
+        )
+    return sorted(result, key=lambda group: (group["label"].casefold(), group["cusip"]))
+
+
 def report_payload(manifest: dict, validated: dict) -> dict:
-    end, kind = manifest["data_through"], manifest["data_kind"]
-    first = display_months(end)[0]
-    entry = manifest["prices"][end]
-    baseline = validated["prices"]["days"][0]
-    synthetic = kind == SYNTHETIC
-    prefix = "SYNTHETIC_TEST_ONLY" if synthetic else SYMBOL
-    stem = f"{prefix}_top10_monthly_{first}_to_{end}"
-    return {
+    snapshots, kind = validated["snapshots"], manifest["data_kind"]
+    first, last = snapshots[0]["reported_as_of"], snapshots[-1]["reported_as_of"]
+    prefix = "SYNTHETIC_TEST_ONLY" if kind == SYNTHETIC else SYMBOL
+    stem = f"{prefix}_sec_nport_top10_quarterly_{first}_to_{last}"
+    next_period = month_end(month_shift(parse_date(last), 3))
+    report = {
         "data_kind": kind,
-        "ticker": "TEST ONLY" if synthetic else SYMBOL,
-        "fund_name": (
-            "Synthetic test fund - not IGV investment data"
-            if synthetic
-            else "iShares Expanded Tech-Software Sector ETF"
-        ),
-        "product_url": "https://example.invalid/synthetic/" if synthetic else PRODUCT_URL,
+        "ticker": "TEST ONLY" if kind == SYNTHETIC else SYMBOL,
+        "fund_name": "Synthetic test fund - not IGV" if kind == SYNTHETIC else FUND_NAME,
+        "identity": manifest["identity"],
         "period_start": first,
-        "period_end": end,
-        "data_through": end,
+        "period_end": last,
+        "data_through": manifest["data_through"],
         "last_successful_data_refresh_utc": manifest["last_successful_data_refresh_utc"],
-        "downloads": {name: f"{stem}_{name}.csv" for name in ("wide", "long", "performance")},
-        "methodology": (
-            f"Last XNYS exchange session of every completed calendar month, {first} through "
-            f"{end}, using exchange-calendars {manifest['calendar']['version']}. Holdings "
-            "are ranked by unrounded source portfolio weight, with no asset-class exclusions. "
-            "Weights are percentages of the whole fund, never normalized to the top ten. "
-            "Historical tickers and names are retained as supplied. No interpolation, "
-            "forward-filling, estimated months or current-holdings substitutions."
+        "stale_after": stale_after(last),
+        "next_fiscal_quarter_month": next_period.strftime("%Y-%m"),
+        "expected_publication_around": (
+            next_period + timedelta(days=PUBLICATION_LAG_DAYS)
+        ).isoformat(),
+        "retained_quarters": validated["quarter_count"],
+        "retained_filings": len(validated["all_filings"]),
+        "snapshots": snapshots,
+        "securities": security_groups(snapshots),
+        "identifier_note": (
+            "These SEC N-PORT filings supply no exchange tickers. Positions are identified "
+            "by security title, issuer name, CUSIP and available ISIN; no tickers are inferred."
+            if all(item["identifier_note"] for item in snapshots)
+            else "Historical identifiers are shown as reported; missing tickers are not inferred."
         ),
-        "snapshots": validated["snapshots"],
-        "performance": {
-            "source_name": "Synthetic test generator" if synthetic else "Yahoo Finance",
-            "source_url": entry["source_url"],
-            "history_url": (
-                "https://example.invalid/synthetic/"
-                if synthetic
-                else "https://finance.yahoo.com/quote/IGV/history/"
-            ),
-            "currency": "USD",
-            "baseline_date": baseline["date"],
-            "baseline_close": baseline["close"],
-            "source_sha256": entry["sha256"],
-            "retrieved_at_utc": entry["retrieved_at_utc"],
-            "methodology": (
-                f"Daily quote OHLC fields aggregated by exchange-local month, with the first "
-                f"return measured from the {baseline['date']} closing-price baseline. "
-                "Quote prices follow the provider's split-adjusted convention; dividend-"
-                "adjusted adjclose is not used. Cash distributions are excluded: these are "
-                "price returns, not total returns. OHLC is first open, highest high, lowest "
-                "low and final close; volume sums the supplied daily field without estimation "
-                "or rescaling. Every expected exchange session is required. Each refresh "
-                "replaces the whole active price window, never splices adjustment bases, "
-                "and checks overlapping OHLC against recorded splits. Initial adjustment "
-                "semantics rely on the provider's convention, not an independent price audit."
-            ),
-            "series": validated["series"],
-        },
+        "methodology": (
+            "The latest 20 consecutive reported fiscal-quarter-end portfolios, not calendar "
+            "quarters or monthly estimates. Dates are N-PORT A.3(b) (repPdDate); A.3(a) "
+            "(repPdEnd) supplies fiscal year end. Quarter-end months follow that fiscal year. "
+            "Actual reported days are retained, including weekends; no exchange calendar is "
+            "imposed. Rankings use the exact reported C.2(d) percentage of net assets (pctVal), "
+            "then reported USD value and source row order, before display rounding. "
+            "All public row types remain eligible, including securities-lending collateral, "
+            "cash-management vehicles and derivatives. Collateral can raise the investment "
+            "total above 100% because its offsetting obligation is reported elsewhere; "
+            "this as-filed top ten can differ from an issuer's equity-only holdings list. "
+            "Zero/negative values are retained. No inferred historical tickers, "
+            "normalization, interpolation or current-holdings substitutions."
+        ),
     }
+    report["downloads"] = {
+        name: f"{stem}_{digest(content.encode())[:16]}_{name}.csv"
+        for name, content in export_csvs(report).items()
+    }
+    return report
 
 
 def csv_text(headers: list[str], rows: list[list]) -> str:
     def safe(value):
-        if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")):
-            return "'" + value
-        if isinstance(value, str) and value.startswith(("\t", "\r", "\n")):
+        if isinstance(value, str) and (
+            value.lstrip().startswith(("=", "+", "-", "@")) or value.startswith(("\t", "\r", "\n"))
+        ):
             return "'" + value
         return value
 
@@ -894,143 +449,293 @@ def csv_text(headers: list[str], rows: list[list]) -> str:
 
 
 def export_csvs(report: dict) -> dict[str, str]:
-    snapshots, kind = report["snapshots"], report["data_kind"]
-    long_fields = ["rank", *FIELDS]
-    long_headers = ["month", "snapshot_date", *long_fields, "source_url", "data_kind"]
-    long_rows = [
-        [
-            item["month"],
-            item["snapshot_date"],
-            *[row[field] for field in long_fields],
-            item["source_url"],
-            kind,
-        ]
-        for item in snapshots
-        for row in item["top10"]
-    ]
-    wide_headers = [
-        "month",
-        "snapshot_date",
-        *[f"rank_{rank}_ticker_and_weight_pct" for rank in range(1, 11)],
-        "top10_weight_pct",
+    snapshots, kind, identity = report["snapshots"], report["data_kind"], report["identity"]
+    provenance_fields = [
+        "accession",
+        "form",
+        "filing_date",
+        "accepted_at_utc",
+        "retrieved_at_utc",
         "source_url",
+        "filing_url",
+        "source_sha256",
+        "filing_index_sha256",
+    ]
+    leading = ["reported_as_of", "fiscal_year_end", "fiscal_quarter"]
+    trailing = [
+        *provenance_fields,
+        "normalized_object_sha256",
+        "registrant_cik",
+        "series_id",
         "data_kind",
     ]
-    wide_rows = [
-        [
-            item["month"],
-            item["snapshot_date"],
-            *[f"{row['ticker']} {row['weight_pct']:.2f}%" for row in item["top10"]],
-            item["top10_weight_pct"],
-            item["source_url"],
+
+    def start(item):
+        return [item[name] for name in leading]
+
+    def finish(item):
+        return [
+            *[item["provenance"][name] for name in provenance_fields],
+            item["object_sha256"],
+            identity["registrant_cik"],
+            identity["series_id"],
             kind,
         ]
-        for item in snapshots
+
+    long_fields = [
+        "rank",
+        "ticker",
+        "name",
+        "title",
+        "cusip",
+        "isin",
+        "asset_category",
+        "payoff_profile",
+        "weight_pct",
+        "market_value_usd",
+        "balance",
+        "units",
+        "currency",
+        "source_row",
+        "is_cash_collateral",
+        "cash_collateral_value_usd",
+        "is_non_cash_collateral",
+        "non_cash_collateral_value_usd",
+        "is_loan_by_fund",
+        "loan_value_usd",
     ]
-    performance_rows = [
-        [*[row[field] for field in PERFORMANCE_FIELDS], report["performance"]["source_url"], kind]
-        for row in report["performance"]["series"]
-    ]
+    long_rows, wide_rows = [], []
+    for item in snapshots:
+        for row in item["top10"]:
+            values = {
+                **row,
+                "ticker": "; ".join(row["ticker"]),
+                "isin": "; ".join(row["isin"]),
+                **{key: decimal(row[key]) for key in ("weight_pct", "market_value_usd", "balance")},
+                **{
+                    key: (
+                        decimal(value)
+                        if key.endswith("_usd") and value is not None
+                        else str(value).lower()
+                        if isinstance(value, bool)
+                        else value
+                    )
+                    for key, value in row["security_lending"].items()
+                },
+            }
+            long_rows.append([*start(item), *[values[key] for key in long_fields], *finish(item)])
+        wide_rows.append(
+            [
+                *start(item),
+                *[
+                    f"{'; '.join(row['ticker']) or row['title']} {row['weight_pct']}%"
+                    for row in item["top10"]
+                ],
+                decimal(item["top10_weight_pct"]),
+                *finish(item),
+            ]
+        )
     return {
-        "wide": csv_text(wide_headers, wide_rows),
-        "long": csv_text(long_headers, long_rows),
-        "performance": csv_text([*PERFORMANCE_FIELDS, "source_url", "data_kind"], performance_rows),
+        "long": csv_text([*leading, *long_fields, *trailing], long_rows),
+        "wide": csv_text(
+            [
+                *leading,
+                *[f"rank_{rank}_reported_identifier_and_weight_pct" for rank in range(1, 11)],
+                "top10_weight_pct",
+                *trailing,
+            ],
+            wide_rows,
+        ),
     }
 
 
+def static_table(report: dict) -> str:
+    rows = []
+    for item in report["snapshots"]:
+        reported = item["reported_as_of"]
+        label = f"FY {item['fiscal_year_end'][:4]} Q{item['fiscal_quarter']}"
+        cells = []
+        for holding in item["top10"]:
+            identifier = "; ".join(holding["ticker"]) or "Ticker not reported"
+            name = html.escape(holding["title"], quote=True)
+            category = (
+                "Securities-lending collateral"
+                if holding["security_lending"]["is_cash_collateral"] is True
+                else "Cash-management vehicle"
+                if holding["asset_category"] == "STIV"
+                else ""
+            )
+            identifiers = html.escape(
+                " / ".join(filter(None, [holding["cusip"], *holding["isin"]])), quote=True
+            )
+            cells.append(
+                f'<td><div class="cell" title="{name} / {identifiers}"><span class="symbol">'
+                f'{name}</span><span class="holding-name">{html.escape(identifier)}</span>'
+                '<span class="holding-name">CUSIP: '
+                f"{html.escape(holding['cusip'] or 'not reported')}</span>"
+                f'<span class="category">{category}</span>'
+                f'<span class="pct">{decimal(holding["weight_pct"]):.2f}%</span></div></td>'
+            )
+        source = html.escape(item["provenance"]["filing_url"], quote=True)
+        rows.append(
+            f'<tr data-period="{reported}"><th scope="row"><button type="button" '
+            f'class="quarter-button" data-period="{reported}">{label}</button>'
+            f'<span class="date"><a href="{source}" '
+            f'target="_blank" rel="noopener noreferrer">{reported}</a></span></th>{"".join(cells)}'
+            f"<td>{decimal(item['top10_weight_pct']):.2f}%</td></tr>"
+        )
+    return "\n".join(rows)
+
+
 def build_site(
-    root: Path,
-    output: Path,
-    *,
-    test_only: bool = False,
-    now: datetime | None = None,
+    root: Path, output: Path, *, test_only: bool = False, now: datetime | None = None
 ) -> dict:
     if test_only:
-        if (
-            output.resolve() == (ROOT / "site").resolve()
-            or ROOT.resolve() in output.resolve().parents
-        ):
+        if output.resolve() == ROOT.resolve() or ROOT.resolve() in output.resolve().parents:
             raise BlockedError(
-                "Synthetic sites must be built in a temporary directory outside the repo"
+                "Synthetic sites must stay in temporary directories outside the repo"
             )
     else:
-        require_publication()
-    if output.resolve() == root.resolve() or root.resolve() in output.resolve().parents:
-        raise DataError("Site output must be separate from the source archive")
-    kind = SYNTHETIC if test_only else PRODUCTION
+        require_publication(os.environ)
+    if output.is_symlink() or (
+        output.resolve() == root.resolve()
+        or root.resolve() in output.resolve().parents
+        or output.resolve() in root.resolve().parents
+    ):
+        raise DataError("Site output must be separate from the archive and cannot be a symlink")
     manifest = read_manifest(root)
-    validated = validate_manifest(manifest, root, now=now, kind=kind)
+    validated = validate_manifest(
+        manifest, root, now=now, kind=SYNTHETIC if test_only else PRODUCTION
+    )
     report = report_payload(manifest, validated)
     template = (ROOT / "igv_snapshot_template.html").read_text(encoding="utf-8")
-    title_prefix = "SYNTHETIC TEST ONLY" if test_only else SYMBOL
+    title = "SYNTHETIC TEST ONLY" if test_only else SYMBOL
     replacements = {
         "__TEST_VISIBILITY__": "" if test_only else "hidden",
         "__IGV_DATA__": json.dumps(report, ensure_ascii=True, allow_nan=False).replace(
             "<", "\\u003c"
         ),
         "__IGV_TITLE__": html.escape(
-            f"{title_prefix} | Performance and monthly holdings | "
-            f"{report['period_start']} - {report['period_end']}"
+            f"{title} | Quarterly SEC holdings | {report['period_start']} - {report['period_end']}"
         ),
+        "__PERIOD__": f"{report['period_start']} - {report['period_end']}",
+        "__DATA_THROUGH__": report["data_through"],
+        "__LAST_REFRESH__": report["last_successful_data_refresh_utc"],
+        "__IDENTIFIER_NOTE__": html.escape(report["identifier_note"]),
+        "__STATIC_TABLE__": static_table(report),
         **{f"__CSV_{key.upper()}__": value for key, value in report["downloads"].items()},
     }
     for marker, replacement in replacements.items():
         if template.count(marker) != 1:
             raise DataError(f"HTML template needs exactly one {marker} placeholder")
         template = template.replace(marker, replacement)
+    if re.search(r"__[A-Z_]+__", template):
+        raise DataError("Unresolved HTML template placeholder")
+    if output.exists():
+        for path in output.iterdir():
+            if (
+                path.is_symlink()
+                or not path.is_file()
+                or (
+                    path.name not in {"index.html", ".nojekyll"}
+                    and not re.fullmatch(
+                        r"(?:IGV|SYNTHETIC_TEST_ONLY)_sec_nport_top10_quarterly_"
+                        r"\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}_[a-f0-9]{16}_(?:wide|long)\.csv",
+                        path.name,
+                    )
+                )
+            ):
+                raise DataError(
+                    "Output contains non-SEC or unknown files; use a clean site directory"
+                )
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".site-stage-", dir=output.parent) as temporary:
         stage = Path(temporary)
-        for kind, text in export_csvs(report).items():
-            (stage / report["downloads"][kind]).write_text(text, encoding="utf-8-sig", newline="")
+        for name, content in export_csvs(report).items():
+            (stage / report["downloads"][name]).write_text(
+                content, encoding="utf-8-sig", newline=""
+            )
         (stage / ".nojekyll").write_text("", encoding="utf-8")
         (stage / "index.html").write_text(template, encoding="utf-8")
         output.mkdir(parents=True, exist_ok=True)
         for filename in [*report["downloads"].values(), ".nojekyll", "index.html"]:
-            # The entry point is promoted last, only after all its downloads exist.
-            os.replace(stage / filename, output / filename)
+            if (output / filename).is_symlink():
+                raise DataError("Site target files must not be symlinks")
+        for filename in [*report["downloads"].values(), ".nojekyll"]:
+            target = output / filename
+            if target.exists() and target.read_bytes() != (stage / filename).read_bytes():
+                raise DataError("An immutable holdings download was modified")
+        added = []
+        committed = False
+        try:
+            for filename in [*report["downloads"].values(), ".nojekyll"]:
+                target = output / filename
+                if not target.exists():
+                    os.replace(stage / filename, target)
+                    added.append(target)
+            # Amendments use new content-hashed CSV names, so the old page stays coherent.
+            os.replace(stage / "index.html", output / "index.html")
+            committed = True
+        finally:
+            if not committed:
+                for path in added:
+                    path.unlink()
     return report
 
 
 def print_summary(manifest: dict, validated: dict) -> None:
+    first = validated["snapshots"][0]["reported_as_of"]
     print(
-        f"Data through {manifest['data_through']}; 60 months / 600 ranked records. "
-        f"Last successful data refresh: {manifest['last_successful_data_refresh_utc']}"
+        f"{manifest['data_kind']}: {first} through {manifest['data_through']}; "
+        f"20 reported fiscal quarters / 200 ranked positions. "
+        f"Last successful data refresh: {manifest['last_successful_data_refresh_utc']}."
     )
-    for item in validated["snapshots"]:
-        for note in item["quality_notes"]:
-            print(f"WARNING {item['month']}: {note}")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("refresh", "validate", "build"))
+    parser.add_argument("command", choices=("bootstrap", "refresh", "validate", "build"))
     parser.add_argument("--data-dir", type=Path, default=ROOT / "data")
     parser.add_argument("--output", type=Path, default=ROOT / "site")
     parser.add_argument("--allow-network", action="store_true")
-    parser.add_argument("--test-only", action="store_true", help="Offline synthetic archives only")
+    parser.add_argument("--test-only", action="store_true")
+    parser.add_argument(
+        "--allow-stale", action="store_true", help="Offline validation only; never build/deploy"
+    )
     args = parser.parse_args(argv)
     try:
-        if args.command == "refresh":
+        if args.allow_stale and args.command != "validate":
+            raise BlockedError("--allow-stale is only valid for offline archive validation")
+        if args.command in {"refresh", "bootstrap"}:
             if args.test_only:
-                raise BlockedError("Synthetic refresh is test-injected only; no network allowed")
-            require_publication()
+                raise BlockedError("Synthetic refresh is injected offline by tests only")
+            require_publication(os.environ)
             if not args.allow_network:
-                raise BlockedError("Live collection requires --allow-network")
-            changed = refresh_archive(
-                args.data_dir, lambda url: download(url, allow_network=args.allow_network)
-            )
+                raise BlockedError("SEC collection requires explicit --allow-network")
+            if args.command == "bootstrap" and os.environ.get("GITHUB_ACTIONS") == "true":
+                raise BlockedError(
+                    "Bootstrap is operator-local only; Actions requires an audited seed"
+                )
+            if args.command == "refresh":
+                read_manifest(args.data_dir)
+            client = SECClient(os.environ.get("SEC_USER_AGENT", ""))
+            changed = refresh_archive(args.data_dir, client, bootstrap=args.command == "bootstrap")
             print(
-                "Validated archive updated." if changed else "No new completed month; no changes."
+                "Normalized SEC archive updated."
+                if changed
+                else "No new SEC filings/amendments; no data or timestamp changes."
             )
         elif args.allow_network:
-            raise BlockedError("--allow-network is only valid with refresh")
+            raise BlockedError("--allow-network is only valid for SEC acquisition")
         if args.command == "build":
             build_site(args.data_dir, args.output, test_only=args.test_only)
-            print("Built index.html and three relative CSV downloads.")
+            print("Built quarterly holdings with two relative holdings-only CSV downloads.")
         manifest = read_manifest(args.data_dir)
         validated = validate_manifest(
-            manifest, args.data_dir, kind=SYNTHETIC if args.test_only else PRODUCTION
+            manifest,
+            args.data_dir,
+            kind=SYNTHETIC if args.test_only else PRODUCTION,
+            require_current=not args.allow_stale,
         )
         print_summary(manifest, validated)
         return 0

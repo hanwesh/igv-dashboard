@@ -1,315 +1,489 @@
+import copy
+import io
 import json
-import math
+import ssl
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+from email.message import Message
 from urllib.error import HTTPError, URLError
+from xml.etree.ElementTree import fromstring, tostring
 
 import pytest
 
-import igv_snapshot as app
-from tests.synthetic import TEST_END, holdings, prices
+import sec_nport as sec
+from tests.synthetic import TEST_END, TEST_NOW, Provider, filing, holdings, identity, index, mapping
+
+NS = "{" + sec.NAMESPACE + "}"
 
 
-def points(data):
-    return data["componentsByNameMap"]["holdings"]["containersByNameMap"]["all"][
-        "dataPointsByNameMap"
-    ]
+def xml_root(raw=None):
+    return fromstring(raw or holdings(filing()))
 
 
-def result(data):
-    return data["chart"]["result"][0]
+def node(root, name):
+    return root.find(".//" + NS + name)
 
 
-def parsed_holding(data):
-    return app.parse_holdings(json.dumps(data).encode(), TEST_END, app.SYNTHETIC)
+def parse(root=None, *, item=None, raw=None):
+    item = item or filing()
+    raw = raw if raw is not None else tostring(root if root is not None else xml_root())
+    return sec.normalize_filing(
+        raw,
+        item,
+        identity(),
+        sec.index_metadata(index(item), item, sec.SYNTHETIC),
+        TEST_NOW,
+        sec.SYNTHETIC,
+    )
 
 
-def parsed_price(data, end=TEST_END):
-    return app.parse_prices(json.dumps(data).encode(), end, app.SYNTHETIC)
+def test_only_normalized_facts_survive():
+    result = parse()
+    serialized = sec.json_bytes(result)
+    assert b"SYNTHETIC NARRATIVE" not in serialized
+    assert b"<edgarSubmission" not in serialized
+    assert b"signature" not in serialized
+    assert set(result) == sec.SNAPSHOT_KEYS
+    assert result["source_row_count"] == 22
+    assert result["net_assets_usd"] == "1000000.123456789012"
+    for field in ("source_sha256", "filing_index_sha256"):
+        sec.check_hash(result["provenance"][field])
 
 
-def test_unrounded_rank_and_identifiers():
-    data = json.loads(holdings(TEST_END))
-    source = points(data)
-    source["holdingPercent"]["value"][-1] = 10.000001
-    source["holdingPercent"]["value"][-2] = 10.000002
-    item = parsed_holding(data)
-    assert item["top10"][0]["ticker"] == "TEST01"
-    assert item["top10"][0]["weight_pct"] == 10.000002
-    assert item["top10"][1]["ticker"] == "TEST00"
-    assert item["top10_weight_pct"] == math.fsum(row["weight_pct"] for row in item["top10"])
-    assert [row["rank"] for row in item["top10"]] == list(range(1, 11))
-    assert item["top10"][0]["name"] == "Synthetic Test Company 01"
+def test_exact_source_weights_and_unrounded_ranking():
+    root = xml_root()
+    rows = node(root, "invstOrSecs")
+    node(rows[0], "pctVal").text = "30.000000000002"
+    node(rows[1], "pctVal").text = "30.000000000003"
+    result = parse(root)
+    ranked = sec.ranked_snapshot(result, "a" * 64)
+    assert [row["source_row"] for row in ranked["top10"][:2]] == [2, 1]
+    assert ranked["top10"][0]["weight_pct"] == "30.000000000003"
+    assert Decimal(ranked["top10_weight_pct"]) == sum(
+        (Decimal(row["weight_pct"]) for row in ranked["top10"]), Decimal(0)
+    )
 
 
-def test_rounding_noise_quiet_but_material_allocation_warns():
-    for delta in [0, 0.00001, -0.00001, 0.004]:
-        item = app.parse_holdings(
-            holdings(TEST_END, allocation_delta=delta), TEST_END, app.SYNTHETIC
-        )
-        assert not item["quality_notes"]
-        assert item["portfolio_weight_total_pct"] == pytest.approx(100 + delta)
-    for delta in [2, -1, 0.01]:
-        item = app.parse_holdings(
-            holdings(TEST_END, allocation_delta=delta), TEST_END, app.SYNTHETIC
-        )
-        assert len(item["quality_notes"]) == 1
-        assert "without normalization" in item["quality_notes"][0]
-        assert item["portfolio_weight_total_pct"] == pytest.approx(100 + delta)
+def test_ranking_does_not_round_36_digit_values():
+    result = parse()
+    first, second = result["holdings"][:2]
+    first["weight_pct"] = "100000000000000000000000.000000000001"
+    second["weight_pct"] = "100000000000000000000000.000000000002"
+    assert sec.ranked_snapshot(result, "a" * 64)["top10"][0]["source_row"] == 2
 
 
-def test_cash_and_negative_non_top_positions_are_not_filtered():
-    data = json.loads(holdings(TEST_END))
-    source = points(data)
-    for index, weight in [(0, 0), (1, -0.1)]:
-        source["holdingPercent"]["value"][index] = weight
-        source["marketValue"]["value"][index] = weight * 1000
-        for field in ["ticker", "isin", "cusip"]:
-            source[field]["value"][index] = None
-    source["assetClass"]["value"][-1] = "Synthetic Cash"
-    assert parsed_holding(data)["holding_count"] == 20
-    assert parsed_holding(data)["top10"][0]["asset_class"] == "Synthetic Cash"
+def test_ties_use_value_then_source_order_without_ticker_assumptions():
+    result = parse()
+    for row in result["holdings"]:
+        row["weight_pct"] = "1"
+        row["market_value_usd"] = "100"
+    result["holdings"][5]["market_value_usd"] = "101"
+    ranked = sec.ranked_snapshot(result, "a" * 64)
+    assert [row["source_row"] for row in ranked["top10"][:3]] == [6, 1, 2]
+
+
+def test_missing_historic_tickers_and_non_top_identifiers_are_preserved():
+    result = parse()
+    assert result["holdings"][1]["ticker"] == []
+    assert result["holdings"][1]["isin"] == ["TEST00000001"]
+    assert result["holdings"][-1]["cusip"] is None
+    assert result["holdings"][-1]["lei"] is None
+    assert result["holdings"][-1]["isin"] == []
+    assert result["holdings"][-1]["weight_pct"] == "-0.25"
+    assert result["holdings"][-2]["weight_pct"] == "0"
+    assert "no reported ticker" in " ".join(sec.ranked_snapshot(result, "a" * 64)["quality_notes"])
+
+
+def test_all_absent_tickers_are_a_neutral_source_property():
+    result = parse()
+    for row in result["holdings"]:
+        row["ticker"] = []
+    ranked = sec.ranked_snapshot(result, "a" * 64)
+    assert "supplies no exchange tickers" in ranked["identifier_note"]
+    assert "CUSIP" in ranked["identifier_note"]
+    assert not any("ticker" in note for note in ranked["quality_notes"])
+
+
+def test_unusual_totals_are_reported_without_renormalization():
+    item = filing()
+    result = parse(raw=holdings(item, allocation_delta="2"))
+    ranked = sec.ranked_snapshot(result, "a" * 64)
+    assert abs(Decimal(ranked["portfolio_weight_pct"]) - 102) < Decimal("0.000000001")
+    assert "without normalization" in ranked["quality_notes"][0]
+    assert ranked["top10"][0]["weight_pct"] == result["holdings"][0]["weight_pct"]
+
+
+def test_conditional_categories_currency_and_row_types():
+    root = xml_root()
+    row = node(root, "invstOrSec")
+    for simple, conditional, attrs in [
+        ("assetCat", "assetConditional", {"assetCat": "OTHER", "desc": "Synthetic test asset"}),
+        ("issuerCat", "issuerConditional", {"issuerCat": "OTHER", "desc": "Synthetic test issuer"}),
+        ("curCd", "currencyConditional", {"curCd": "EUR", "exchangeRt": "1.1"}),
+    ]:
+        element = node(row, simple)
+        element.tag, element.attrib, element.text = NS + conditional, attrs, None
+    result = parse(root)
+    assert result["holdings"][0]["asset_category"] == "OTHER"
+    assert result["holdings"][0]["currency"] == "EUR"
+    assert "Synthetic test asset" not in json.dumps(result)
+
+
+def test_all_three_lending_shapes_and_cash_management_are_distinct():
+    rows = parse()["holdings"]
+    assert rows[0]["security_lending"]["is_loan_by_fund"] is True
+    assert rows[0]["security_lending"]["loan_value_usd"] == "12.345"
+    assert rows[1]["security_lending"]["is_loan_by_fund"] is False
+    assert rows[1]["security_lending"]["loan_value_usd"] is None
+    assert rows[6]["security_lending"]["is_cash_collateral"] is True
+    assert rows[6]["asset_category"] == "STIV"
+    assert rows[20]["asset_category"] == "STIV"
+    assert rows[20]["security_lending"]["is_cash_collateral"] is False
+
+
+def test_missing_lending_disclosure_remains_unknown_not_false():
+    root = xml_root()
+    row = node(root, "invstOrSec")
+    row.remove(node(row, "securityLending"))
+    assert all(value is None for value in parse(root)["holdings"][0]["security_lending"].values())
+
+
+@pytest.mark.parametrize("case", ["disagree", "duplicate-choice", "missing-value", "unknown"])
+def test_lending_contradictions_are_explicit(case):
+    root = xml_root()
+    row = node(root, "invstOrSecs")[6]
+    block = node(row, "securityLending")
+    if case == "disagree":
+        node(row, "assetCat").text = "EC"
+    elif case == "duplicate-choice":
+        block.append(fromstring(f'<isCashCollateral xmlns="{sec.NAMESPACE}">N</isCashCollateral>'))
+    elif case == "missing-value":
+        node(block, "cashCollateralCondition").attrib.pop("cashCollateralVal")
+    else:
+        block.append(fromstring(f'<unexpected xmlns="{sec.NAMESPACE}">Y</unexpected>'))
+    with pytest.raises(sec.DataError):
+        parse(root)
+
+
+def test_known_common_namespaces_and_identifier_attribute_values():
+    root = xml_root()
+    row = node(root, "invstOrSec")
+    isin = node(row, "isin")
+    isin.tag = "{http://www.sec.gov/edgar/nportcommon}isin"
+    assert parse(root)["holdings"][0]["isin"] == ["TEST00000000"]
+    isin.tag = "{https://untrusted.invalid}isin"
+    with pytest.raises(sec.DataError, match="namespace"):
+        parse(root)
 
 
 @pytest.mark.parametrize(
-    "case",
+    ("field", "value"),
     [
-        "id",
-        "date",
-        "empty",
-        "short",
-        "misaligned",
-        "missing",
-        "nan",
-        "bool",
-        "text_weight",
-        "bad_text",
-        "empty_top",
-        "duplicate",
+        ("regCik", "9999"),
+        ("seriesId", "S000999998"),
+        ("seriesName", "Another fund"),
+        ("repPdDate", "2031-10-31"),
+        ("repPdEnd", "2033-10-31"),
+        ("submissionType", "NPORT-NP"),
+        ("isFinalFiling", "Y"),
+        ("netAssets", "0"),
+        ("pctVal", "NaN"),
+        ("pctVal", "Infinity"),
+        ("pctVal", "1e2"),
+        ("valUSD", "not a number"),
+        ("balance", ""),
+        ("name", ""),
     ],
 )
-def test_holdings_reject_bad_responses(case):
-    data = json.loads(holdings(TEST_END))
-    source = points(data)
-    if case == "id":
-        data["productId"] = 999999
-    elif case == "date":
-        source["asOfDate"]["value"] -= 1
-    elif case in {"empty", "short", "misaligned"}:
-        source["ticker"]["value"] = source["ticker"]["value"][
-            : {"empty": 0, "short": 3, "misaligned": 19}[case]
-        ]
-    elif case == "missing":
-        del source["holdingPercent"]
-    elif case in {"nan", "bool", "text_weight"}:
-        source["holdingPercent"]["value"][-1] = {
-            "nan": float("nan"),
-            "bool": True,
-            "text_weight": "10",
-        }[case]
-    elif case == "bad_text":
-        source["issueName"]["value"][-1] = {"malformed": "text"}
-    elif case == "empty_top":
-        source["ticker"]["value"][-1] = ""
-    elif case == "duplicate":
-        source["isin"]["value"][-2] = source["isin"]["value"][-1]
-    with pytest.raises(app.DataError):
-        parsed_holding(data)
+def test_source_mismatches_and_malformed_fields_fail(field, value):
+    root = xml_root()
+    node(root, field).text = value
+    with pytest.raises(sec.DataError):
+        parse(root)
 
 
-def test_malformed_json_and_kind_mixing():
-    for content in [b"<html>unavailable</html>", b"[]", b"null"]:
-        with pytest.raises(app.DataError):
-            app.parse_holdings(content, TEST_END, app.SYNTHETIC)
-    with pytest.raises(app.DataError, match="mismatch"):
-        app.parse_holdings(holdings(TEST_END), TEST_END, app.PRODUCTION)
-    data = json.loads(holdings(TEST_END))
-    del data["_synthetic_test_only"]
-    with pytest.raises(app.DataError, match="mismatch"):
-        parsed_holding(data)
+@pytest.mark.parametrize("field", ["genInfo", "fundInfo", "invstOrSecs", "pctVal", "identifiers"])
+def test_missing_or_duplicate_required_elements_fail(field):
+    root = xml_root()
+    parent = next(
+        parent for parent in root.iter() if any(child.tag == NS + field for child in parent)
+    )
+    parent.remove(node(parent, field))
+    with pytest.raises(sec.DataError):
+        parse(root)
+    root = xml_root()
+    parent = next(
+        parent for parent in root.iter() if any(child.tag == NS + field for child in parent)
+    )
+    parent.append(copy.deepcopy(node(parent, field)))
+    with pytest.raises(sec.DataError):
+        parse(root)
 
 
-def test_price_month_alignment_and_compounding():
-    snapshots = [
-        app.parse_holdings(holdings(month), month, app.SYNTHETIC)
-        for month in app.display_months(TEST_END)
-    ]
-    parsed = app.parse_prices(prices(TEST_END), TEST_END, app.SYNTHETIC)
-    series = app.performance_series(snapshots, parsed)
-    assert len(series) == 60
-    baseline = parsed["days"][0]
-    assert series[0]["previous_close"] == baseline["close"]
-    compounded = math.prod(1 + row["monthly_return_pct"] / 100 for row in series)
-    assert compounded == pytest.approx(series[-1]["close"] / baseline["close"])
-    assert (compounded - 1) * 100 == pytest.approx(series[-1]["cumulative_return_pct"])
-    for item in series:
-        days = [row for row in parsed["days"] if row["date"].startswith(item["month"])]
-        assert item["trading_days"] == len(days)
-        assert item["volume"] == sum(row["volume"] for row in days)
-        assert item["high"] == max(row["high"] for row in days)
-        assert item["low"] == min(row["low"] for row in days)
-        assert item["open"] == days[0]["open"]
-        assert item["close"] == days[-1]["close"]
-    raw = json.loads(prices(TEST_END))
-    result(raw)["indicators"]["adjclose"][0]["adjclose"] = [
-        value * 0.1 for value in result(raw)["indicators"]["adjclose"][0]["adjclose"]
-    ]
-    assert app.performance_series(snapshots, parsed_price(raw)) == series
-    snapshots[-1]["snapshot_date"] = "2031-05-01"
-    with pytest.raises(app.DataError, match="mismatch"):
-        app.performance_series(snapshots, parsed)
+def test_duplicate_rows_and_nondisseminated_rows_fail():
+    root = xml_root()
+    schedule = node(root, "invstOrSecs")
+    schedule.append(copy.deepcopy(schedule[0]))
+    with pytest.raises(sec.DataError, match="Duplicate complete"):
+        parse(root)
+    root = xml_root()
+    row = node(root, "invstOrSec")
+    row.append(fromstring(f'<notDissem xmlns="{sec.NAMESPACE}">true</notDissem>'))
+    with pytest.raises(sec.DataError, match="nondisseminated"):
+        parse(root)
 
 
 @pytest.mark.parametrize(
-    "case",
+    "raw",
     [
-        "symbol",
-        "currency",
-        "error",
-        "empty_result",
-        "null_result",
-        "missing_column",
-        "misaligned",
-        "null",
-        "infinite",
-        "negative",
-        "ohlc",
-        "volume",
-        "missing_day",
-        "stale",
-        "missing_baseline",
-        "duplicate",
-        "extra_day",
-        "split",
+        b"not XML",
+        b"<html>access denied</html>",
+        b'<!DOCTYPE x [<!ENTITY x "expanded">]><x>&x;</x>',
+        b'<!DOCTYPE x SYSTEM "file:///etc/passwd"><x/>',
     ],
 )
-def test_prices_reject_incomplete_or_invalid_histories(case):
-    data = json.loads(prices(TEST_END))
-    res = result(data)
-    quote = res["indicators"]["quote"][0]
-    if case in {"symbol", "currency"}:
-        res["meta"][case] = "WRONG"
-    elif case == "error":
-        data["chart"]["error"] = {"code": "SyntheticFailure"}
-    elif case == "empty_result":
-        data["chart"]["result"] = []
-    elif case == "null_result":
-        data["chart"]["result"] = None
-    elif case == "missing_column":
-        del quote["open"]
-    elif case == "misaligned":
-        quote["open"].pop()
-    elif case in {"null", "infinite", "negative"}:
-        quote["close"][3] = {"null": None, "infinite": float("inf"), "negative": -1}[case]
-    elif case == "ohlc":
-        quote["high"][4] = quote["low"][4] - 1
-    elif case == "volume":
-        quote["volume"][4] = 1.25
-    elif case in {"missing_day", "stale", "missing_baseline"}:
-        index = {"missing_day": 6, "stale": -1, "missing_baseline": 0}[case]
-        res["timestamp"].pop(index)
-        for values in quote.values():
-            values.pop(index)
-        res["indicators"]["adjclose"][0]["adjclose"].pop(index)
-    elif case == "duplicate":
-        res["timestamp"][1] = res["timestamp"][0]
-    elif case == "extra_day":
-        res["timestamp"][-1] += 86400
-    elif case == "split":
-        res["events"]["splits"] = {
-            "bad": {"date": res["timestamp"][20], "numerator": 0, "denominator": 1}
-        }
-    with pytest.raises(app.DataError):
-        parsed_price(data)
+def test_bad_or_unsafe_xml_is_not_a_portfolio(raw):
+    with pytest.raises(sec.DataError):
+        parse(raw=raw)
 
 
-def test_split_revision_checks_entire_overlap():
-    before = app.parse_prices(prices(TEST_END), TEST_END, app.SYNTHETIC)
-    after_end = "2031-06"
-    split_day = app.trading_days(app.month_start(after_end), app.snapshot_date(after_end))[
-        5
-    ].isoformat()
-    after = app.parse_prices(prices(after_end, splits={split_day: 3}), after_end, app.SYNTHETIC)
-    app.check_price_revision(before, after)
-    broken = app.parse_prices(prices(after_end), after_end, app.SYNTHETIC)
-    broken["splits"] = after["splits"]
-    with pytest.raises(app.DataError, match="Incoherent"):
-        app.check_price_revision(before, broken)
-    after["days"][50]["open"] *= 1.001
-    with pytest.raises(app.DataError, match="Incoherent"):
-        app.check_price_revision(before, after)
-    retro = app.parse_prices(prices(after_end, splits={split_day: 3}), after_end, app.SYNTHETIC)
-    retro["splits"][before["days"][-10]["date"]] = 2
-    with pytest.raises(app.DataError, match="retrospective"):
-        app.check_price_revision(before, retro)
-
-
-def test_initial_price_window_rejects_unadjusted_split_quotes():
-    split_day = "2029-06-11"
-    raw = json.loads(prices(TEST_END, splits={split_day: 3}))
-    source = result(raw)
-    for index, stamp in enumerate(source["timestamp"]):
-        if app.timestamp_day(stamp).isoformat() < split_day:
-            for field in ("open", "high", "low", "close"):
-                source["indicators"]["quote"][0][field][index] *= 3
-    with pytest.raises(app.DataError, match="Mixed price adjustment basis"):
-        parsed_price(raw)
-
-
-def test_recorded_cash_distribution_is_not_used_as_price_return():
-    raw = json.loads(prices(TEST_END))
-    source = result(raw)
-    for index in range(30):
-        source["indicators"]["adjclose"][0]["adjclose"][index] *= 0.98
-    stamp = source["timestamp"][30]
-    source["events"]["dividends"] = {str(stamp): {"date": stamp, "amount": 2}}
-    assert (
-        parsed_price(raw)["days"]
-        == app.parse_prices(prices(TEST_END), TEST_END, app.SYNTHETIC)["days"]
-    )
-    source["events"].pop("dividends")
-    with pytest.raises(app.DataError, match="Mixed price adjustment basis"):
-        parsed_price(raw)
-
-
-def test_numeric_overflow_is_explicit():
-    raw = json.loads(holdings(TEST_END))
-    points(raw)["holdingPercent"]["value"] = [1e308] * 20
-    with pytest.raises(app.DataError, match="overflow"):
-        parsed_holding(raw)
-
-
-def test_retries_exact_request_without_fallback():
-    good = holdings(TEST_END)
-    responses = iter([URLError("synthetic transient error"), b"{}", good])
-    seen, delays = [], []
-
-    def fetch(url):
-        seen.append(url)
-        value = next(responses)
-        if isinstance(value, Exception):
-            raise value
-        return value
-
-    url = app.source_url(TEST_END, app.SYNTHETIC)
-    raw, item = app.fetch_validated(
-        fetch,
-        url,
-        lambda data: app.parse_holdings(data, TEST_END, app.SYNTHETIC),
-        sleep=delays.append,
-    )
-    assert raw == good and item["month"] == TEST_END
-    assert seen == [url] * 3
-    assert delays == [1, 2]
-
-
-def test_permanent_http_failure_does_not_retry():
-    seen = []
-
-    def forbidden(url):
-        seen.append(url)
-        raise HTTPError(url, 403, "synthetic forbidden", {}, None)
-
-    with pytest.raises(app.DataError, match="HTTP 403"):
-        app.fetch_validated(
-            forbidden, "https://example.invalid/", lambda _: {}, sleep=lambda _: None
+def test_source_bounds_and_future_dates():
+    with pytest.raises(sec.DataError, match="limit"):
+        parse(raw=b"x" * (sec.MAX_BYTES + 1))
+    item = filing()
+    with pytest.raises(sec.DataError, match="Future"):
+        sec.normalize_filing(
+            holdings(item),
+            item,
+            identity(),
+            sec.index_metadata(index(item), item, sec.SYNTHETIC),
+            datetime(2031, 9, 1, tzinfo=UTC),
+            sec.SYNTHETIC,
         )
-    assert len(seen) == 1
+
+
+def test_synthetic_markers_cannot_be_upgraded_to_production():
+    item = filing()
+    with pytest.raises(sec.DataError, match="cannot be mixed"):
+        sec.resolve_identity(mapping(), TEST_NOW, sec.PRODUCTION)
+    with pytest.raises(sec.DataError, match="cannot be mixed"):
+        sec.normalize_filing(
+            holdings(item),
+            item,
+            identity(),
+            sec.index_metadata(index(item), item, sec.SYNTHETIC),
+            TEST_NOW,
+            sec.PRODUCTION,
+        )
+
+
+@pytest.mark.parametrize(
+    "case", ["wrong-cik", "duplicate", "no-match", "wrong-series", "misaligned"]
+)
+def test_fund_mapping_needs_one_exact_class(case):
+    data = json.loads(mapping())
+    if case == "wrong-cik":
+        data["data"][1][0] = 9999
+    elif case == "duplicate":
+        data["data"].append(data["data"][1])
+    elif case == "no-match":
+        data["data"] = data["data"][:1]
+    elif case == "wrong-series":
+        data["data"][1][1] = "IGV"
+    else:
+        data["data"][0].pop()
+    with pytest.raises(sec.DataError):
+        sec.resolve_identity(sec.json_bytes(data), TEST_NOW, sec.SYNTHETIC)
+
+
+def test_official_index_acceptance_is_eastern_converted_to_utc():
+    item = filing()
+    metadata = sec.index_metadata(index(item), item, sec.SYNTHETIC)
+    assert metadata["accepted_at_utc"] == "2031-09-14T16:00:00Z"
+    winter = filing("2030-10-31")
+    assert sec.index_metadata(index(winter), winter, sec.SYNTHETIC)["accepted_at_utc"].endswith(
+        "17:00:00Z"
+    )
+
+
+def test_acceptance_can_precede_official_filing_date():
+    item = filing()
+    raw = index(item).replace(b"2031-09-14 12:00:00", b"2031-09-13 18:30:00")
+    metadata = sec.index_metadata(raw, item, sec.SYNTHETIC)
+    assert metadata["accepted_at_utc"] == "2031-09-13T22:30:00Z"
+    sec.normalize_filing(holdings(item), item, identity(), metadata, TEST_NOW, sec.SYNTHETIC)
+
+
+@pytest.mark.parametrize("case", ["date", "period", "accepted", "link", "duplicate-acceptance"])
+def test_index_provenance_is_required(case):
+    item = filing()
+    raw = index(item)
+    if case == "date":
+        raw = raw.replace(b"2031-09-14", b"2031-09-13")
+    elif case == "period":
+        raw = raw.replace(TEST_END.encode(), b"2031-10-31")
+    elif case == "accepted":
+        raw = raw.replace(b"12:00:00", b"not a timestamp")
+    elif case == "link":
+        raw = raw.replace(b"primary_doc.xml", b"other.xml")
+    else:
+        raw += b'<div class="infoHead">Accepted</div><div class="info">2031-09-14 12:00:00</div>'
+    with pytest.raises(sec.DataError):
+        sec.index_metadata(raw, item, sec.SYNTHETIC)
+
+
+def test_discovery_paginates_and_returns_amendments():
+    provider = Provider(count=120)
+    provider.add(TEST_END, amendment=1, filed="2031-09-15")
+    found = sec.discover_filings(provider, identity(), "1990-01-01", "2031-09-15", sec.SYNTHETIC)
+    assert len(found) == 121 and found[-1].form == "NPORT-P/A"
+    assert len(provider.calls) == 2
+
+
+@pytest.mark.parametrize(
+    "case", ["timeout", "truncated", "broad", "missing", "wrong-fund", "duplicate"]
+)
+def test_discovery_fails_closed_on_incomplete_or_wrong_results(case):
+    provider = Provider()
+
+    def malformed(url):
+        result = json.loads(provider(url))
+        if case == "timeout":
+            result["timed_out"] = True
+        elif case == "truncated":
+            result["hits"]["total"]["relation"] = "gte"
+        elif case == "broad":
+            result["hits"]["total"]["value"] = 501
+        elif case == "missing":
+            result["hits"]["hits"].pop()
+        elif case == "wrong-fund":
+            result["hits"]["hits"][0]["_source"]["ciks"] = ["9999"]
+        else:
+            result["hits"]["hits"][1] = result["hits"]["hits"][0]
+        return sec.json_bytes(result)
+
+    with pytest.raises(sec.DataError):
+        sec.discover_filings(malformed, identity(), "2025-01-01", "2031-09-15", sec.SYNTHETIC)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://query1.finance.yahoo.com/v8/finance/chart/IGV",
+        "https://www.blackrock.com/varnish-api/data",
+        "https://www.ishares.com/us/products/239771",
+        "https://example.invalid/synthetic/file.xml",
+        "https://www.sec.gov.evil.invalid/Archives/edgar/data/1100663/file.xml",
+        "http://www.sec.gov/files/company_tickers_mf.json",
+        "https://www.sec.gov/Archives/edgar/data/999/123456789012345678/primary_doc.xml",
+    ],
+)
+def test_network_allowlist_rejects_all_other_sources(url):
+    client = sec.SECClient("igv-dashboard synthetic operator@example.invalid")
+    with pytest.raises(sec.DataError, match="outside"):
+        client(url)
+
+
+def http_error(code, retry=None):
+    headers = Message()
+    if retry is not None:
+        headers["Retry-After"] = retry
+    return HTTPError(sec.MAPPING_URL, code, "Synthetic HTTP error", headers, None)
+
+
+def client_for(responses):
+    calls, waits = [], []
+    responses = iter(responses)
+
+    def open_url(request, timeout):
+        calls.append(request.full_url)
+        response = next(responses)
+        if isinstance(response, Exception):
+            raise response
+        return io.BytesIO(response)
+
+    return (
+        sec.SECClient(
+            "igv-dashboard synthetic operator@example.invalid",
+            open_url=open_url,
+            sleep=waits.append,
+            monotonic=lambda: 0,
+            clock=lambda: TEST_NOW,
+        ),
+        calls,
+        waits,
+    )
+
+
+def test_transient_retries_preserve_request_and_retry_after():
+    client, calls, waits = client_for([http_error(429, "12"), URLError("test"), b"{}"])
+    assert client(sec.MAPPING_URL) == b"{}"
+    assert calls == [sec.MAPPING_URL] * 3
+    assert waits == [12, 1, 4, 1]
+
+
+def test_retry_after_http_date():
+    later = (TEST_NOW + timedelta(seconds=30)).strftime("%a, %d %b %Y %H:%M:%S GMT")
+    client, calls, waits = client_for([http_error(503, later), b"{}"])
+    assert client(sec.MAPPING_URL) == b"{}"
+    assert waits[0] == 30 and len(calls) == 2
+
+
+@pytest.mark.parametrize("code", [401, 403, 404])
+def test_permanent_errors_never_retry_or_change_identity(code):
+    client, calls, waits = client_for([http_error(code)])
+    with pytest.raises(sec.DataError):
+        client(sec.MAPPING_URL)
+    assert len(calls) == 1 and waits == []
+
+
+@pytest.mark.parametrize("retry", ["121", "not a delay"])
+def test_retry_after_beyond_budget_or_invalid_defers_without_early_request(retry):
+    client, calls, waits = client_for([http_error(429, retry)])
+    with pytest.raises(sec.DataError, match="Retry-After"):
+        client(sec.MAPPING_URL)
+    assert len(calls) == 1 and waits == []
+
+
+def test_bounded_retries_reads_and_throttle():
+    client, calls, _ = client_for([TimeoutError()] * 3)
+    with pytest.raises(sec.DataError, match="three"):
+        client(sec.MAPPING_URL)
+    assert len(calls) == 3
+    client, calls, _ = client_for([b"x" * (sec.MAX_BYTES + 1)])
+    with pytest.raises(sec.DataError, match="limit"):
+        client(sec.MAPPING_URL)
+    client, calls, waits = client_for([b"{}", b"{}"])
+    client(sec.MAPPING_URL)
+    client(sec.MAPPING_URL)
+    assert waits == [1]
+
+
+def test_no_identification_fallback_or_redirects():
+    for value in [
+        "",
+        "impersonated-browser",
+        "igv-dashboard " + "\r\n" + "injected",
+        "igv-dashboard https://github.com/example",
+    ]:
+        with pytest.raises(sec.BlockedError):
+            sec.SECClient(value)
+    with pytest.raises(sec.DataError, match="redirect"):
+        sec.NoRedirects().redirect_request(None, None, 302, "", {}, "https://example.invalid")
+
+
+def test_tls_failure_is_explicit_not_retried_without_verification():
+    client, calls, waits = client_for(
+        [URLError(ssl.SSLCertVerificationError("Synthetic CA error"))]
+    )
+    with pytest.raises(sec.DataError, match="TLS verification failed"):
+        client(sec.MAPPING_URL)
+    assert len(calls) == 1 and waits == []
+
+
+@pytest.mark.parametrize(
+    "value", ["NaN", "Infinity", "1e9", "1,000", "1.0000000000001", "9" * 37, 1, None]
+)
+def test_numeric_contract(value):
+    with pytest.raises(sec.DataError):
+        sec.decimal(value)
