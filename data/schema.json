@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IGV archive manifest v1 - SCHEMA ONLY, NO MARKET DATA",
+  "description": "No production manifest or source objects ship with this code. Python validation also enforces source schemas, SHA256, exact exchange dates, contiguous months, finite values and complete price coverage.",
+  "type": "object",
+  "required": ["schema_version", "data_kind", "ticker", "product_id", "data_through", "last_successful_data_refresh_utc", "calendar", "holdings", "prices"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "data_kind": {"enum": ["production", "synthetic-test-only"]},
+    "ticker": {"const": "IGV"},
+    "product_id": {"const": 239771},
+    "data_through": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}$"},
+    "last_successful_data_refresh_utc": {"type": "string", "format": "date-time"},
+    "calendar": {
+      "type": "object",
+      "required": ["name", "library", "version"],
+      "properties": {
+        "name": {"const": "XNYS"},
+        "library": {"const": "exchange-calendars"},
+        "version": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "holdings": {
+      "type": "object",
+      "minProperties": 60,
+      "propertyNames": {"pattern": "^[0-9]{4}-[0-9]{2}$"},
+      "additionalProperties": {"$ref": "#/$defs/holdings"}
+    },
+    "prices": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[0-9]{4}-[0-9]{2}$"},
+      "additionalProperties": {"$ref": "#/$defs/prices"}
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["object", "sha256", "source_url", "retrieved_at_utc", "as_of_date"],
+      "properties": {
+        "object": {"type": "string", "pattern": "^objects/[a-f0-9]{64}\\.json$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "source_url": {"type": "string", "format": "uri"},
+        "retrieved_at_utc": {"type": "string", "format": "date-time"},
+        "as_of_date": {"type": "string", "format": "date"}
+      }
+    },
+    "holdings": {
+      "allOf": [{"$ref": "#/$defs/source"}],
+      "required": ["requested_date"],
+      "properties": {"requested_date": {"type": "string", "format": "date"}},
+      "unevaluatedProperties": false
+    },
+    "prices": {
+      "allOf": [{"$ref": "#/$defs/source"}],
+      "required": ["requested_start_date", "requested_end_date", "price_basis"],
+      "properties": {
+        "requested_start_date": {"type": "string", "format": "date"},
+        "requested_end_date": {"type": "string", "format": "date"},
+        "price_basis": {"const": "provider-split-adjusted-quote"}
+      },
+      "unevaluatedProperties": false
+    }
+  }
+}
