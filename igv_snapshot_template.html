@@ -40,6 +40,8 @@
     .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; padding: 16px 20px; background: #f8fafb; }
     label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 650; }
     .controls input { width: 240px; max-width: 100%; }
+    .controls label { max-width: 100%; min-width: 0; }
+    #security-select { width: 320px; max-width: 100%; }
     #row-count { font-size: 12px; color: #556875; padding: 12px 0; margin-left: auto; }
     .table-scroll { overflow: auto; max-height: 850px; }
     table { width: 100%; min-width: 1500px; border-collapse: separate; border-spacing: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -96,7 +98,7 @@
     <p class="source-note" id="stale-warning" role="status" hidden></p>
     <p class="subtle" id="publication-lag"></p>
     <p class="subtle" id="identifier-note">__IDENTIFIER_NOTE__</p>
-    <p class="source-note" id="collateral-note"><strong>As-filed top ten, including securities-lending collateral.</strong> N-PORT includes cash collateral and cash-management positions, not just equities. Their offsetting obligations are reported elsewhere, so investment weights can exceed 100% and this list can differ from the issuer's published top ten. We never renormalize or silently exclude them.</p>
+    <p class="source-note" id="collateral-note"><strong>As-filed top ten, including securities-lending collateral.</strong> N-PORT includes cash collateral and cash-management positions, not just equities. Securities-lending collateral has an offsetting obligation elsewhere, so investment weights can exceed 100% and this list can differ from the issuer's published top ten. We never renormalize or silently exclude them.</p>
     <section class="panel" id="chart-panel" aria-labelledby="chart-heading">
       <div class="panel-head">
         <div><div class="eyebrow">Independent hosted chart</div><h2 id="chart-heading">IGV price chart by TradingView</h2></div>
@@ -127,10 +129,11 @@
       <div class="quarter-note" id="quarter-note"></div>
     </section>
     <section class="panel" aria-labelledby="grid-heading">
-      <div class="panel-head"><div><h2 id="grid-heading">Quarter by quarter</h2><p class="subtle">Largest reported net-asset weights first. Names are historical; missing tickers are not inferred.</p></div></div>
+      <div class="panel-head"><div><h2 id="grid-heading">Quarter by quarter</h2><p class="subtle">Largest reported net-asset weights first. Filter continuity uses CUSIP, with the latest as-filed title as the group label. Historical names resolve to the same CUSIP; each row keeps its original title. Reported dates link to SEC filings.</p></div></div>
       <div class="controls" id="controls" hidden>
         <label for="year-select">Reported year<select id="year-select"><option value="">All years</option></select></label>
         <label for="order-select">Order<select id="order-select"><option value="asc">Oldest first</option><option value="desc">Newest first</option></select></label>
+        <label for="security-select">Security / top-ten appearances<select id="security-select"><option value="">All securities (CUSIP)</option></select></label>
         <label for="holding-search">Highlight identifier or company<input id="holding-search" type="search" placeholder="Ticker, name, CUSIP or ISIN" autocomplete="off"></label>
         <span id="row-count" role="status" aria-live="polite"></span>
       </div>
@@ -214,6 +217,11 @@
       option.value = year;
       byId("year-select").append(option);
     }
+    for (const group of report.securities) {
+      const option = make("option", "", group.label + " / " + group.cusip + " (" + group.appearances + "/" + snapshots.length + " quarters)");
+      option.value = group.cusip;
+      byId("security-select").append(option);
+    }
     function selectQuarter(reported) {
       const item = snapshots.find(snapshot => snapshot.reported_as_of === reported);
       byId("quarter-select").value = reported;
@@ -245,7 +253,9 @@
     function renderTable() {
       const year = byId("year-select").value;
       const query = byId("holding-search").value.trim().toLocaleLowerCase();
-      let visible = snapshots.filter(item => !year || item.reported_as_of.startsWith(year + "-"));
+      const selectedCusip = byId("security-select").value;
+      const matchingCusips = new Set(report.securities.filter(group => group.search_terms.some(term => term.toLocaleLowerCase().includes(query))).map(group => group.cusip));
+      let visible = snapshots.filter(item => (!year || item.reported_as_of.startsWith(year + "-")) && (!selectedCusip || item.top10.some(row => row.cusip === selectedCusip)));
       if (byId("order-select").value === "desc") visible = visible.slice().reverse();
       byId("quarterly-body").replaceChildren();
       for (const item of visible) {
@@ -256,13 +266,15 @@
         const button = make("button", "quarter-button", label(item));
         button.type = "button";
         button.addEventListener("click", () => selectQuarter(item.reported_as_of));
-        heading.append(button, make("span", "date", item.reported_as_of));
+        const date = make("span", "date");
+        date.append(sourceLink(item.provenance.filing_url, item.reported_as_of));
+        heading.append(button, date);
         tr.append(heading);
         for (const row of item.top10) {
           const cell = make("div", "cell");
           cell.title = row.title + " / Issuer: " + row.name + " / " + identifiers(row);
           const searchable = [...row.ticker, row.name, row.title, row.cusip || "", ...row.isin].join(" ").toLocaleLowerCase();
-          if (query && searchable.includes(query)) cell.classList.add("match");
+          if ((selectedCusip && row.cusip === selectedCusip) || (query && (row.cusip ? matchingCusips.has(row.cusip) : searchable.includes(query)))) cell.classList.add("match");
           cell.append(make("span", "symbol", row.title), make("span", "holding-name", row.ticker.join("; ") || "Ticker not reported"), make("span", "holding-name", "CUSIP: " + (row.cusip || "not reported")), make("span", "category", category(row)), make("span", "pct", pct(row.weight_pct)));
           const td = make("td");
           td.append(cell);
@@ -276,6 +288,7 @@
     byId("quarter-select").addEventListener("change", event => selectQuarter(event.target.value));
     byId("year-select").addEventListener("change", renderTable);
     byId("order-select").addEventListener("change", renderTable);
+    byId("security-select").addEventListener("change", renderTable);
     byId("holding-search").addEventListener("input", renderTable);
     selectQuarter(last.reported_as_of);
     renderTable();

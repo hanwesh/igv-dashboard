@@ -346,6 +346,41 @@ def refresh_archive(
     return True
 
 
+def security_groups(snapshots: list[dict]) -> list[dict]:
+    grouped: dict[str, list[tuple[str, dict]]] = {}
+    for item in snapshots:
+        for row in item["top10"]:
+            if row["cusip"]:
+                grouped.setdefault(row["cusip"], []).append((item["reported_as_of"], row))
+    result = []
+    for cusip, occurrences in grouped.items():
+        latest_date, latest = max(occurrences, key=lambda pair: (pair[0], -pair[1]["source_row"]))
+        quarters = sorted({reported for reported, _ in occurrences})
+        result.append(
+            {
+                "cusip": cusip,
+                "label": latest["title"],
+                "latest_reported_as_of": latest_date,
+                "reported_quarters": quarters,
+                "appearances": len(quarters),
+                "search_terms": sorted(
+                    {
+                        value
+                        for _, row in occurrences
+                        for value in [
+                            cusip,
+                            row["title"],
+                            row["name"],
+                            *row["ticker"],
+                            *row["isin"],
+                        ]
+                    }
+                ),
+            }
+        )
+    return sorted(result, key=lambda group: (group["label"].casefold(), group["cusip"]))
+
+
 def report_payload(manifest: dict, validated: dict) -> dict:
     snapshots, kind = validated["snapshots"], manifest["data_kind"]
     first, last = snapshots[0]["reported_as_of"], snapshots[-1]["reported_as_of"]
@@ -369,6 +404,7 @@ def report_payload(manifest: dict, validated: dict) -> dict:
         "retained_quarters": validated["quarter_count"],
         "retained_filings": len(validated["all_filings"]),
         "snapshots": snapshots,
+        "securities": security_groups(snapshots),
         "identifier_note": (
             "These SEC N-PORT filings supply no exchange tickers. Positions are identified "
             "by security title, issuer name, CUSIP and available ISIN; no tickers are inferred."
@@ -540,10 +576,12 @@ def static_table(report: dict) -> str:
                 f'<span class="category">{category}</span>'
                 f'<span class="pct">{decimal(holding["weight_pct"]):.2f}%</span></div></td>'
             )
+        source = html.escape(item["provenance"]["filing_url"], quote=True)
         rows.append(
             f'<tr data-period="{reported}"><th scope="row"><button type="button" '
             f'class="quarter-button" data-period="{reported}">{label}</button>'
-            f'<span class="date">{reported}</span></th>{"".join(cells)}'
+            f'<span class="date"><a href="{source}" '
+            f'target="_blank" rel="noopener noreferrer">{reported}</a></span></th>{"".join(cells)}'
             f"<td>{decimal(item['top10_weight_pct']):.2f}%</td></tr>"
         )
     return "\n".join(rows)

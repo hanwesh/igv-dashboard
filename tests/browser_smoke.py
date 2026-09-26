@@ -115,11 +115,25 @@ def smoke(page, origin, output, report):
     expect(page.locator("#source-notes")).to_contain_text("no reported ticker")
     expect(page.locator("#collateral-note")).to_contain_text("securities-lending collateral")
     expect(page.locator("#quarter-note")).to_contain_text("All reported investments:")
-    expect(page.locator("#quarter-detail .category")).to_contain_text("Securities-lending collateral")
+    expect(page.locator("#quarter-detail .category")).to_contain_text(
+        "Securities-lending collateral"
+    )
     expect(page.locator("#publication-lag")).to_contain_text("60 days")
     expect(page.locator("#chart-viewport")).to_be_hidden()
     assert widgets == []
     assert page.locator("#download-performance").count() == 0
+    expect(page.locator("#security-select option")).to_have_count(11)
+    group = next(group for group in report["securities"] if group["cusip"] == "TEST00001")
+    expect(page.locator('#security-select option[value="TEST00001"]')).to_have_text(
+        f"{group['label']} / TEST00001 (20/20 quarters)"
+    )
+    page.locator("#holding-search").fill("Synthetic Historical Alias")
+    expect(page.locator("#quarterly-body .match")).to_have_count(20)
+    expect(page.locator("#quarterly-body .match").last).to_contain_text(group["label"])
+    page.locator("#holding-search").fill("")
+    page.locator("#security-select").select_option("TEST00001")
+    expect(page.locator("#quarterly-body .match")).to_have_count(20)
+    page.locator("#security-select").select_option("")
     page.locator("#year-select").select_option("2028")
     expect(page.locator("#quarterly-body tr")).to_have_count(4)
     page.locator("#holding-search").fill("TEST02")
@@ -196,7 +210,13 @@ def main():
     with tempfile.TemporaryDirectory(prefix="igv-synthetic-smoke-") as temporary:
         root = Path(temporary)
         data, output = root / "data", root / "igv-dashboard"
-        seed(data, provider=Provider(warning_period=TEST_END, extra_month=True))
+        provider = Provider(warning_period=TEST_END, extra_month=True)
+        for record in provider.records.values():
+            if record["filing"].reported_date_hint < "2030-01-01":
+                record["xml"] = record["xml"].replace(
+                    b"Synthetic Test Company 01", b"Synthetic Historical Alias"
+                )
+        seed(data, provider=provider)
         report = app.build_site(data, output, test_only=True, now=TEST_NOW)
         server = ThreadingHTTPServer(("127.0.0.1", 0), partial(QuietHandler, directory=str(root)))
         thread = threading.Thread(target=server.serve_forever, daemon=True)

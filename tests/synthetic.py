@@ -121,7 +121,9 @@ def holdings(item: sec.Filing, *, allocation_delta="0") -> bytes:
             lending = SubElement(row, "securityLending")
             if number == 6:
                 SubElement(
-                    lending, "cashCollateralCondition", isCashCollateral="Y",
+                    lending,
+                    "cashCollateralCondition",
+                    isCashCollateral="Y",
                     cashCollateralVal=format(weight * 10000, "f"),
                 )
             else:

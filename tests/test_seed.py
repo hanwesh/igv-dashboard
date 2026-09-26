@@ -117,3 +117,40 @@ def test_seed_no_tickers_are_a_neutral_source_property(actual_seed):
         ranked = sec.ranked_snapshot(validated["all_filings"][accession], "a" * 64)
         assert "supplies no exchange tickers" in ranked["identifier_note"]
         assert not any("ticker" in note for note in ranked["quality_notes"])
+
+
+def test_seed_cross_quarter_continuity_is_cusip_not_issuer_spelling(actual_seed):
+    _, validated = actual_seed
+    originals = {accession: validated["all_filings"][accession] for _, accession, _, _ in BASELINE}
+    quarters = app.active_quarters(originals)
+    snapshots = [
+        sec.ranked_snapshot(originals[quarters[period]], "a" * 64)
+        for period in sorted(quarters)[-20:]
+    ]
+    groups = app.security_groups(snapshots)
+    assert len(groups) == 17
+    counts = {group["cusip"]: group["appearances"] for group in groups}
+    assert {
+        cusip: counts[cusip]
+        for cusip in [
+            "79466L302",
+            "594918104",
+            "68389X105",
+            "81762P102",
+            "00724F101",
+            "461202103",
+            "697435105",
+        ]
+    } == {
+        "79466L302": 20,
+        "594918104": 20,
+        "68389X105": 20,
+        "81762P102": 20,
+        "00724F101": 19,
+        "461202103": 19,
+        "697435105": 18,
+    }
+    salesforce = next(group for group in groups if group["cusip"] == "79466L302")
+    assert {"salesforce.com Inc", "Salesforce Inc", "Salesforce, Inc."} <= set(
+        salesforce["search_terms"]
+    )

@@ -53,6 +53,35 @@ def test_archive_contains_normalized_facts_only_and_rolls_20_quarters(archive):
         assert b"prices" not in content
 
 
+def test_security_groups_use_cusip_and_latest_exact_title(archive):
+    snapshots = copy.deepcopy(validate(archive)["snapshots"])
+    first, last = snapshots[0]["top10"][0], snapshots[-1]["top10"][0]
+    first["name"] = "Synthetic Historic Company, Inc."
+    first["title"] = "Synthetic Historic Class"
+    last["name"] = "Synthetic Latest Company Inc"
+    last["title"] = "Synthetic Latest Class"
+    # An identical name is not identity evidence across two different CUSIPs.
+    snapshots[-1]["top10"][1]["name"] = last["name"]
+    snapshots[-1]["top10"][1]["title"] = last["title"]
+    groups = app.security_groups(snapshots)
+    assert groups == app.security_groups(list(reversed(snapshots)))
+    group = next(item for item in groups if item["cusip"] == first["cusip"])
+    assert len(groups) == 10
+    assert group["label"] == last["title"]
+    assert group["latest_reported_as_of"] == TEST_END
+    assert group["appearances"] == 20
+    assert group["reported_quarters"] == [item["reported_as_of"] for item in snapshots]
+    assert {first["title"], first["name"], last["title"], last["name"]} <= set(
+        group["search_terms"]
+    )
+    assert snapshots[0]["top10"][0]["title"] == "Synthetic Historic Class"
+    snapshots[0]["top10"][0]["cusip"] = None
+    without_cusip = app.security_groups(snapshots)
+    group = next(item for item in without_cusip if item["cusip"] == last["cusip"])
+    assert group["appearances"] == 19 and len(without_cusip) == 10
+    assert first["title"] not in group["search_terms"]
+
+
 def test_checkout_does_not_rewrite_provenance(archive, tmp_path):
     repository = tmp_path / "git-source"
     repository.mkdir()
