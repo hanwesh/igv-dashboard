@@ -297,6 +297,7 @@ def test_cli_and_live_gate_are_off_by_default(tmp_path, capsys, monkeypatch):
     with pytest.raises(app.BlockedError):
         app.download(app.price_url(TEST_END), allow_network=True)
     assert "BLOCKED" in capsys.readouterr().err
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     monkeypatch.setenv("DATA_PUBLICATION_APPROVED", "true")
     with pytest.raises(app.BlockedError, match="explicit"):
         app.download(app.price_url(TEST_END))
