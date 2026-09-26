@@ -1,6 +1,7 @@
 import copy
 import io
 import json
+import ssl
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from email.message import Message
@@ -402,11 +403,25 @@ def test_bounded_retries_reads_and_throttle():
 
 
 def test_no_identification_fallback_or_redirects():
-    for value in ["", "impersonated-browser", "igv-dashboard " + "\r\n" + "injected"]:
+    for value in [
+        "",
+        "impersonated-browser",
+        "igv-dashboard " + "\r\n" + "injected",
+        "igv-dashboard https://github.com/example",
+    ]:
         with pytest.raises(sec.BlockedError):
             sec.SECClient(value)
     with pytest.raises(sec.DataError, match="redirect"):
         sec.NoRedirects().redirect_request(None, None, 302, "", {}, "https://example.invalid")
+
+
+def test_tls_failure_is_explicit_not_retried_without_verification():
+    client, calls, waits = client_for(
+        [URLError(ssl.SSLCertVerificationError("Synthetic CA error"))]
+    )
+    with pytest.raises(sec.DataError, match="TLS verification failed"):
+        client(sec.MAPPING_URL)
+    assert len(calls) == 1 and waits == []
 
 
 @pytest.mark.parametrize(

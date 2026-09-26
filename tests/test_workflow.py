@@ -48,7 +48,7 @@ def test_workflow_scope_and_off_gate():
     assert workflow["permissions"] == {}
     assert workflow["concurrency"]["cancel-in-progress"] == "false"
     jobs = workflow["jobs"]
-    assert set(jobs) == {"checks", "refresh", "deploy", "notify", "sec-access-diagnostic"}
+    assert set(jobs) == {"checks", "refresh", "deploy", "notify"}
     assert jobs["checks"]["permissions"] == {"contents": "read"}
     assert "allow-network" not in json.dumps(jobs["checks"])
     assert "upload" not in json.dumps(jobs["checks"])
@@ -59,7 +59,6 @@ def test_workflow_scope_and_off_gate():
         assert "github.ref == 'refs/heads/main'" in condition
         assert '["push","schedule","workflow_dispatch"]' in condition
         assert "vars.SEC_PUBLICATION_APPROVED == 'true'" in condition
-        assert "inputs.sec_access_diagnostic != true" in condition
     assert jobs["refresh"]["permissions"] == {"contents": "write"}
     assert jobs["refresh"]["steps"][0]["with"]["ref"] == "${{ github.sha }}"
     assert jobs["deploy"]["permissions"] == {
@@ -92,30 +91,6 @@ def test_workflow_scope_and_off_gate():
     assert "bootstrap" not in refresh_steps
     assert "data/manifest.json data/objects" in refresh_steps
     assert "git add ." not in text
-
-
-def test_diagnostic_is_default_off_read_only_and_mutually_exclusive_with_publication():
-    workflow = yaml.load(WORKFLOW.read_text(), Loader=yaml.BaseLoader)
-    control = workflow["on"]["workflow_dispatch"]["inputs"]["sec_access_diagnostic"]
-    assert control == {
-        "description": (
-            "One read-only SEC metadata access diagnostic; disables ALL write/deploy jobs"
-        ),
-        "type": "boolean",
-        "required": "false",
-        "default": "false",
-    }
-    jobs = workflow["jobs"]
-    job = jobs["sec-access-diagnostic"]
-    assert job["permissions"] == {"contents": "read"}
-    assert "github.event_name == 'workflow_dispatch'" in job["if"]
-    assert "inputs.sec_access_diagnostic == true" in job["if"]
-    assert job["steps"][0]["with"]["persist-credentials"] == "false"
-    text = json.dumps(job)
-    assert "secrets." not in text and "upload" not in text and "artifact" not in text
-    assert "git push" not in text and "SEC_PUBLICATION_APPROVED" not in text
-    for name in ("checks", "refresh", "deploy", "notify"):
-        assert "inputs.sec_access_diagnostic != true" in jobs[name]["if"]
 
 
 def test_data_placeholder_has_no_dataset():

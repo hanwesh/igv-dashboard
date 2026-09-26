@@ -6,6 +6,7 @@ import calendar
 import hashlib
 import json
 import re
+import ssl
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -15,10 +16,11 @@ from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import HTTPRedirectHandler, HTTPSHandler, Request, build_opener
 from xml.etree.ElementTree import ParseError, canonicalize, tostring
 from zoneinfo import ZoneInfo
 
+import certifi
 from defusedxml.common import DefusedXmlException
 from defusedxml.ElementTree import fromstring
 
@@ -241,6 +243,7 @@ class SECClient:
             or "igv-dashboard" not in user_agent
             or not 20 <= len(user_agent) <= 500
             or any(ord(char) < 32 for char in user_agent)
+            or not re.search(r"[A-Za-z0-9_.+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", user_agent)
         ):
             raise BlockedError(
                 "Set secret SEC_USER_AGENT to truthful igv-dashboard/operator contact "
@@ -248,7 +251,13 @@ class SECClient:
             )
         self.user_agent = user_agent
         self.sleep, self.monotonic, self.clock = sleep, monotonic, clock
-        self.open_url = open_url or build_opener(NoRedirects()).open
+        self.open_url = (
+            open_url
+            or build_opener(
+                NoRedirects(),
+                HTTPSHandler(context=ssl.create_default_context(cafile=certifi.where())),
+            ).open
+        )
         self.last_request: float | None = None
 
     def __call__(self, url: str) -> bytes:
@@ -294,7 +303,12 @@ class SECClient:
                         raise DataError(
                             "SEC Retry-After exceeds this run's wait budget; retry later"
                         )
-            except (URLError, TimeoutError, ConnectionError):
+            except URLError as error:
+                if isinstance(error.reason, ssl.SSLCertVerificationError):
+                    raise DataError(
+                        "SEC TLS verification failed; verify the CA bundle, never disable TLS"
+                    ) from None
+            except (TimeoutError, ConnectionError):
                 pass
             if attempt == 2:
                 break

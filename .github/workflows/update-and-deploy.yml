@@ -5,12 +5,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      sec_access_diagnostic:
-        description: "One read-only SEC metadata access diagnostic; disables ALL write/deploy jobs"
-        type: boolean
-        required: false
-        default: false
   schedule:
     - cron: "17 7 * * *"
 
@@ -23,7 +17,6 @@ concurrency:
 jobs:
   checks:
     name: Synthetic-only checks
-    if: inputs.sec_access_diagnostic != true
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -76,7 +69,6 @@ jobs:
     needs: checks
     if: >-
       github.repository == 'hanwesh/igv-dashboard' &&
-      inputs.sec_access_diagnostic != true &&
       github.ref == 'refs/heads/main' &&
       contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) &&
       vars.SEC_PUBLICATION_APPROVED == 'true'
@@ -126,7 +118,6 @@ jobs:
     needs: [checks, refresh]
     if: >-
       github.repository == 'hanwesh/igv-dashboard' &&
-      inputs.sec_access_diagnostic != true &&
       github.ref == 'refs/heads/main' &&
       contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) &&
       vars.SEC_PUBLICATION_APPROVED == 'true'
@@ -184,7 +175,6 @@ jobs:
     if: >-
       always() &&
       github.repository == 'hanwesh/igv-dashboard' &&
-      inputs.sec_access_diagnostic != true &&
       github.ref == 'refs/heads/main' &&
       contains(fromJSON('["push","schedule","workflow_dispatch"]'), github.event_name) &&
       vars.SEC_PUBLICATION_APPROVED == 'true' &&
@@ -207,25 +197,3 @@ jobs:
           python-version: "3.13"
       - name: Maintain one deduplicated incident issue
         run: python .github/scripts/pipeline_issue.py
-
-  sec-access-diagnostic:
-    name: Read-only SEC metadata access diagnostic
-    if: >-
-      github.repository == 'hanwesh/igv-dashboard' &&
-      github.event_name == 'workflow_dispatch' &&
-      inputs.sec_access_diagnostic == true
-    runs-on: ubuntu-24.04
-    timeout-minutes: 3
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: "3.13"
-      - name: Check fixed SEC metadata endpoints once without data or publication writes
-        env:
-          SEC_ACCESS_DIAGNOSTIC: ${{ inputs.sec_access_diagnostic }}
-        run: python .github/scripts/sec_access_diagnostic.py

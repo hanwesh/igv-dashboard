@@ -290,7 +290,7 @@ def refresh_archive(
             "data_kind": kind,
             "source": SOURCE,
             "identity": identity,
-            "discovery_start_date": month_shift(now.date().replace(day=1), -72).isoformat(),
+            "discovery_start_date": "2019-04-01",
             "last_successful_data_refresh_utc": utc_text(now),
             "data_through": "",
             "filings": {},
