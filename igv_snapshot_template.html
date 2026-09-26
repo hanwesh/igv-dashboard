@@ -53,6 +53,7 @@
     td .cell { border-radius: 5px; padding: 7px; min-width: 105px; max-width: 165px; background: #edf5f4; overflow-wrap: anywhere; }
     td .symbol { font-weight: 750; display: block; }
     td .holding-name { font-size: 10px; display: block; margin: 4px 0; color: #536672; }
+    .category { display: block; font-size: 10px; color: #7b530e; margin-top: 4px; }
     td .pct { color: #47626e; font-size: 11px; display: block; margin-top: 3px; }
     td .cell.match { outline: 2px solid #936012; background: #fff0c9; }
     .quarter-button { padding: 0; border: 0; min-height: 32px; background: transparent; font-weight: 750; color: #175b59; text-decoration: underline; text-underline-offset: 3px; }
@@ -94,6 +95,7 @@
     </header>
     <p class="source-note" id="stale-warning" role="status" hidden></p>
     <p class="subtle" id="publication-lag"></p>
+    <p class="source-note" id="collateral-note"><strong>As-filed top ten, including securities-lending collateral.</strong> N-PORT includes cash collateral and cash-management positions, not just equities. Their offsetting obligations are reported elsewhere, so investment weights can exceed 100% and this list can differ from the issuer's published top ten. We never renormalize or silently exclude them.</p>
     <section class="panel" id="chart-panel" aria-labelledby="chart-heading">
       <div class="panel-head">
         <div><div class="eyebrow">Independent hosted chart</div><h2 id="chart-heading">IGV price chart by TradingView</h2></div>
@@ -146,7 +148,7 @@
         <p id="identity-note"></p>
         <p>Only normalized factual holdings and metadata are archived, not full filing XML, narrative notes or signatures. SEC publication is not a blanket public-domain designation or a third-party data license. The source links identify the original filings; this project does not license their prose or other third-party materials.</p>
         <p>Amendments supersede their original reported period by acceptance time, then accession. Prior normalized versions and older reported quarters remain archived. Additional public reporting months are not counted as quarterly portfolios.</p>
-        <p>Weights are percentages of fund net assets, not of the selected ten. The investment schedule need not sum to 100% because of cash, liabilities or derivatives. Zero/negative values and unusual reported totals are retained, not normalized. Holdings changes do not measure purchases or sales: prices, fund flows and corporate actions also affect weights.</p>
+        <p>Weights are percentages of fund net assets, not of the selected ten. Securities-lending cash collateral is identified by the filing's affirmative collateral flag and cross-checked against STIV/RF asset and issuer categories. Other cash-management vehicles are not silently called collateral. The investment schedule need not sum to 100% because of cash, liabilities or derivatives. Zero/negative values and unusual reported totals are retained, not normalized. Holdings changes do not measure purchases or sales: prices, fund flows and corporate actions also affect weights.</p>
         <div id="source-notes"></div>
         <p id="retention-note"></p>
         <p>TradingView retains its widget branding and attribution. Its hosted chart is not a downloadable data feed or part of the SEC archive. No prices are scraped, stored or included in the holdings CSVs. Historical holdings are not investment advice.</p>
@@ -164,6 +166,7 @@
     const pct = value => Number(value).toFixed(2) + "%";
     const label = item => "FY " + item.fiscal_year_end.slice(0, 4) + " Q" + item.fiscal_quarter;
     const identifiers = row => ["CUSIP: " + (row.cusip || "not reported"), "ISIN: " + (row.isin.join("; ") || "not reported")].join(" / ");
+    const category = row => row.security_lending.is_cash_collateral === true ? "Securities-lending collateral" : row.asset_category === "STIV" ? "Cash-management vehicle" : "";
     const make = (tag, className, content) => {
       const node = document.createElement(tag);
       if (className) node.className = className;
@@ -222,13 +225,15 @@
         card.append(make("div", "rank", "#" + row.rank + " / " + row.asset_category));
         card.append(make("div", "ticker", row.ticker.join("; ") || "Ticker not reported"));
         card.append(make("div", "weight", pct(row.weight_pct)));
-        card.append(make("div", "name", row.name));
+        card.append(make("div", "name", row.title));
+        if (row.title !== row.name) card.append(make("div", "identifier", "Issuer: " + row.name));
+        if (category(row)) card.append(make("div", "category", category(row)));
         card.append(make("div", "identifier", identifiers(row)));
         byId("quarter-detail").append(card);
       }
       const notes = byId("quarter-note");
       notes.replaceChildren();
-      notes.append(make("p", "", "Reported net-asset weight of top ten: " + pct(item.top10_weight_pct) + ". Full source row count: " + item.source_row_count + "."));
+      notes.append(make("p", "", "Reported net-asset weight of top ten: " + pct(item.top10_weight_pct) + ". All reported investments: " + pct(item.portfolio_weight_pct) + ". Full source row count: " + item.source_row_count + "."));
       notes.append(sourceLink(provenance.source_url, "Original SEC XML"), document.createTextNode(" / "), sourceLink(provenance.filing_url, "SEC filing index"));
       notes.append(make("p", "", "Accession " + provenance.accession + " / Retrieved " + provenance.retrieved_at_utc));
       notes.append(make("p", "", "Original XML SHA256: " + provenance.source_sha256));
@@ -253,10 +258,10 @@
         tr.append(heading);
         for (const row of item.top10) {
           const cell = make("div", "cell");
-          cell.title = row.name + " / " + identifiers(row);
+          cell.title = row.title + " / Issuer: " + row.name + " / " + identifiers(row);
           const searchable = [...row.ticker, row.name, row.title, row.cusip || "", ...row.isin].join(" ").toLocaleLowerCase();
           if (query && searchable.includes(query)) cell.classList.add("match");
-          cell.append(make("span", "symbol", row.ticker.join("; ") || "Ticker not reported"), make("span", "holding-name", row.name), make("span", "pct", pct(row.weight_pct)));
+          cell.append(make("span", "symbol", row.ticker.join("; ") || "Ticker not reported"), make("span", "holding-name", row.title), make("span", "category", category(row)), make("span", "pct", pct(row.weight_pct)));
           const td = make("td");
           td.append(cell);
           tr.append(td);

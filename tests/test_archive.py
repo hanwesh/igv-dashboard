@@ -380,6 +380,7 @@ def test_html_json_and_csv_formula_safety(archive, tmp_path):
 
     def mutate(item):
         item["holdings"][0]["name"] = hostile
+        item["holdings"][0]["title"] = hostile
         item["holdings"][0]["ticker"] = ["+TEST"]
         item["holdings"][0]["cusip"] = "@TEST"
 

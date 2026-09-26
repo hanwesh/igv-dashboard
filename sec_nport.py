@@ -32,6 +32,11 @@ PRODUCTION = "sec-nport-public-facts"
 SYNTHETIC = "synthetic-test-only"
 SOURCE = "sec-edgar-nport"
 NAMESPACE = "http://www.sec.gov/edgar/nport"
+FIELD_NAMESPACES = {
+    NAMESPACE,
+    "http://www.sec.gov/edgar/nportcommon",
+    "http://www.sec.gov/edgar/common",
+}
 MAPPING_URL = "https://www.sec.gov/files/company_tickers_mf.json"
 SEARCH_URL = "https://efts.sec.gov/LATEST/search-index"
 ARCHIVES_URL = f"https://www.sec.gov/Archives/edgar/data/{int(CIK)}"
@@ -374,8 +379,9 @@ def search_url(series_id: str, start: str, end: str, offset: int, kind=PRODUCTIO
         + urlencode(
             {
                 "q": f'"{series_id}"',
-                "ciks": str(int(CIK)),
-                "forms": "NPORT-P,NPORT-P/A",
+                "ciks": CIK,
+                # EFTS uses the base form to include amendments; adding /A narrows to amendments.
+                "forms": "NPORT-P",
                 "dateRange": "custom",
                 "startdt": start,
                 "enddt": end,
@@ -521,8 +527,15 @@ def index_metadata(raw: bytes, filing: Filing, kind: str = PRODUCTION) -> dict:
     }
 
 
+def local_name(element) -> str:
+    namespace, separator, name = element.tag.removeprefix("{").partition("}")
+    if not separator or namespace not in FIELD_NAMESPACES:
+        raise DataError("Unrecognized namespace in N-PORT factual fields")
+    return name
+
+
 def child(parent, name: str, *, optional=False):
-    matches = parent.findall(f"{{{NAMESPACE}}}{name}")
+    matches = [element for element in parent if local_name(element) == name]
     if len(matches) != 1:
         if optional and not matches:
             return None
@@ -546,13 +559,72 @@ def choice_code(parent, name: str, conditional: str) -> str:
     return text(value, name)
 
 
+def yes_no(value: object, label: str) -> bool:
+    if value not in {"Y", "N"}:
+        raise DataError(f"Invalid N-PORT {label}")
+    return value == "Y"
+
+
+LENDING_KEYS = {
+    "is_cash_collateral",
+    "cash_collateral_value_usd",
+    "is_non_cash_collateral",
+    "non_cash_collateral_value_usd",
+    "is_loan_by_fund",
+    "loan_value_usd",
+}
+
+
+def lending_facts(element) -> dict:
+    facts = dict.fromkeys(sorted(LENDING_KEYS))
+    block = child(element, "securityLending", optional=True)
+    if block is None:
+        return facts
+    fields = (
+        (
+            "isCashCollateral",
+            "cashCollateralCondition",
+            "cashCollateralVal",
+            "is_cash_collateral",
+            "cash_collateral_value_usd",
+        ),
+        (
+            "isNonCashCollateral",
+            "nonCashCollateralCondition",
+            "nonCashCollateralVal",
+            "is_non_cash_collateral",
+            "non_cash_collateral_value_usd",
+        ),
+        ("isLoanByFund", "loanByFundCondition", "loanVal", "is_loan_by_fund", "loan_value_usd"),
+    )
+    if any(
+        local_name(node) not in {name for field in fields for name in field[:2]} for node in block
+    ):
+        raise DataError("Unrecognized N-PORT securities-lending field")
+    for flag, conditional, amount, key, amount_key in fields:
+        simple, alternate = (
+            child(block, flag, optional=True),
+            child(block, conditional, optional=True),
+        )
+        if simple is not None and alternate is not None:
+            raise DataError("Ambiguous N-PORT securities-lending status")
+        if simple is not None:
+            facts[key] = yes_no(simple.text, flag)
+        elif alternate is not None:
+            facts[key] = yes_no(alternate.attrib.get(flag), flag)
+            value = alternate.attrib.get(amount)
+            decimal(value, amount)
+            facts[amount_key] = value
+    return facts
+
+
 def holding_row(element, number: int) -> dict:
     if child(element, "notDissem", optional=True) is not None:
         raise DataError("N-PORT contains nondisseminated Part D rows; not a public portfolio")
     identifiers = child(element, "identifiers")
     securities: dict[str, list] = {"isin": [], "ticker": [], "other": []}
     for identifier in identifiers:
-        name = identifier.tag.removeprefix(f"{{{NAMESPACE}}}")
+        name = local_name(identifier)
         if name not in securities:
             raise DataError("Unrecognized N-PORT security identifier")
         value = text(identifier.attrib.get("value"), name, nullable=True)
@@ -583,6 +655,7 @@ def holding_row(element, number: int) -> dict:
         "balance": field(element, "balance"),
         "market_value_usd": field(element, "valUSD"),
         "weight_pct": field(element, "pctVal"),
+        "security_lending": lending_facts(element),
     }
     for name in ("balance", "market_value_usd", "weight_pct"):
         decimal(row[name], name)
@@ -627,7 +700,7 @@ def normalize_filing(
         raise DataError("N-PORT A.3(b) reported date disagrees with the SEC filing index")
     quarter = fiscal_quarter(reported, fiscal_end)
     schedule = child(form, "invstOrSecs")
-    if any(item.tag != f"{{{NAMESPACE}}}invstOrSec" for item in schedule):
+    if any(local_name(item) != "invstOrSec" for item in schedule):
         raise DataError("Unrecognized N-PORT portfolio row")
     rows = [holding_row(item, number) for number, item in enumerate(schedule, 1)]
     snapshot = {
@@ -671,6 +744,7 @@ ROW_KEYS = {
     "balance",
     "market_value_usd",
     "weight_pct",
+    "security_lending",
 }
 SNAPSHOT_KEYS = {
     "schema_version",
@@ -821,6 +895,24 @@ def validate_snapshot(snapshot: dict, identity: dict, now: datetime, kind: str) 
                     text(identifier, name)
         for name in ("balance", "market_value_usd", "weight_pct"):
             decimal(row[name], name)
+        lending = row["security_lending"]
+        if not isinstance(lending, dict) or set(lending) != LENDING_KEYS:
+            raise DataError("Invalid normalized securities-lending facts")
+        for flag, amount in [
+            ("is_cash_collateral", "cash_collateral_value_usd"),
+            ("is_non_cash_collateral", "non_cash_collateral_value_usd"),
+            ("is_loan_by_fund", "loan_value_usd"),
+        ]:
+            if lending[flag] is not None and type(lending[flag]) is not bool:
+                raise DataError("Invalid normalized securities-lending flag")
+            if lending[amount] is not None:
+                decimal(lending[amount], amount)
+                if lending[flag] is not True:
+                    raise DataError("Lending amount without an affirmative reported flag")
+        cash_vehicle = row["asset_category"] == "STIV" and row["issuer_category"] == "RF"
+        collateral = lending["is_cash_collateral"]
+        if collateral is True and not cash_vehicle:
+            raise DataError("IGV cash-collateral status and asset/issuer classification disagree")
 
 
 def ranked_snapshot(snapshot: dict, object_sha256: str) -> dict:
@@ -847,6 +939,14 @@ def ranked_snapshot(snapshot: dict, object_sha256: str) -> dict:
         notes.append(
             f"{missing} top-ten positions have no reported ticker. "
             "SEC names and available CUSIP/ISIN identifiers are shown; no current tickers inferred."
+        )
+    collateral_rows = [row for row in rows if row["security_lending"]["is_cash_collateral"] is True]
+    if collateral_rows:
+        notes.append(
+            "Includes securities-lending cash collateral: "
+            f"{decimal_sum(row['weight_pct'] for row in collateral_rows)}% of net assets. "
+            "Collateral is a reported investment with an offsetting obligation elsewhere; "
+            "it can lift total weights above 100% and change the as-filed top ten."
         )
     return {
         key: value

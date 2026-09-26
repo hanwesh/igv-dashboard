@@ -376,7 +376,10 @@ def report_payload(manifest: dict, validated: dict) -> dict:
             "Actual reported days are retained, including weekends; no exchange calendar is "
             "imposed. Rankings use the exact reported C.2(d) percentage of net assets (pctVal), "
             "then reported USD value and source row order, before display rounding. "
-            "All public row types remain eligible, including cash-like positions and derivatives. "
+            "All public row types remain eligible, including securities-lending collateral, "
+            "cash-management vehicles and derivatives. Collateral can raise the investment "
+            "total above 100% because its offsetting obligation is reported elsewhere; "
+            "this as-filed top ten can differ from an issuer's equity-only holdings list. "
             "Zero/negative values are retained. No inferred historical tickers, "
             "normalization, interpolation or current-holdings substitutions."
         ),
@@ -452,6 +455,12 @@ def export_csvs(report: dict) -> dict[str, str]:
         "units",
         "currency",
         "source_row",
+        "is_cash_collateral",
+        "cash_collateral_value_usd",
+        "is_non_cash_collateral",
+        "non_cash_collateral_value_usd",
+        "is_loan_by_fund",
+        "loan_value_usd",
     ]
     long_rows, wide_rows = [], []
     for item in snapshots:
@@ -461,13 +470,20 @@ def export_csvs(report: dict) -> dict[str, str]:
                 "ticker": "; ".join(row["ticker"]),
                 "isin": "; ".join(row["isin"]),
                 **{key: decimal(row[key]) for key in ("weight_pct", "market_value_usd", "balance")},
+                **{
+                    key: (
+                        decimal(value) if key.endswith("_usd") and value is not None
+                        else str(value).lower() if isinstance(value, bool) else value
+                    )
+                    for key, value in row["security_lending"].items()
+                },
             }
             long_rows.append([*start(item), *[values[key] for key in long_fields], *finish(item)])
         wide_rows.append(
             [
                 *start(item),
                 *[
-                    f"{'; '.join(row['ticker']) or row['name']} {row['weight_pct']}%"
+                    f"{'; '.join(row['ticker']) or row['title']} {row['weight_pct']}%"
                     for row in item["top10"]
                 ],
                 decimal(item["top10_weight_pct"]),
@@ -496,10 +512,19 @@ def static_table(report: dict) -> str:
         cells = []
         for holding in item["top10"]:
             identifier = "; ".join(holding["ticker"]) or "Ticker not reported"
-            name = html.escape(holding["name"], quote=True)
+            name = html.escape(holding["title"], quote=True)
+            category = (
+                "Securities-lending collateral"
+                if holding["security_lending"]["is_cash_collateral"] is True
+                else "Cash-management vehicle" if holding["asset_category"] == "STIV" else ""
+            )
+            identifiers = html.escape(
+                " / ".join(filter(None, [holding["cusip"], *holding["isin"]])), quote=True
+            )
             cells.append(
-                f'<td><div class="cell" title="{name}"><span class="symbol">'
+                f'<td><div class="cell" title="{name} / {identifiers}"><span class="symbol">'
                 f'{html.escape(identifier)}</span><span class="holding-name">{name}</span>'
+                f'<span class="category">{category}</span>'
                 f'<span class="pct">{decimal(holding["weight_pct"]):.2f}%</span></div></td>'
             )
         rows.append(

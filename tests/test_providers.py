@@ -119,6 +119,53 @@ def test_conditional_categories_currency_and_row_types():
     assert "Synthetic test asset" not in json.dumps(result)
 
 
+def test_all_three_lending_shapes_and_cash_management_are_distinct():
+    rows = parse()["holdings"]
+    assert rows[0]["security_lending"]["is_loan_by_fund"] is True
+    assert rows[0]["security_lending"]["loan_value_usd"] == "12.345"
+    assert rows[1]["security_lending"]["is_loan_by_fund"] is False
+    assert rows[1]["security_lending"]["loan_value_usd"] is None
+    assert rows[6]["security_lending"]["is_cash_collateral"] is True
+    assert rows[6]["asset_category"] == "STIV"
+    assert rows[20]["asset_category"] == "STIV"
+    assert rows[20]["security_lending"]["is_cash_collateral"] is False
+
+
+def test_missing_lending_disclosure_remains_unknown_not_false():
+    root = xml_root()
+    row = node(root, "invstOrSec")
+    row.remove(node(row, "securityLending"))
+    assert all(value is None for value in parse(root)["holdings"][0]["security_lending"].values())
+
+
+@pytest.mark.parametrize("case", ["disagree", "duplicate-choice", "missing-value", "unknown"])
+def test_lending_contradictions_are_explicit(case):
+    root = xml_root()
+    row = node(root, "invstOrSecs")[6]
+    block = node(row, "securityLending")
+    if case == "disagree":
+        node(row, "assetCat").text = "EC"
+    elif case == "duplicate-choice":
+        block.append(fromstring(f'<isCashCollateral xmlns="{sec.NAMESPACE}">N</isCashCollateral>'))
+    elif case == "missing-value":
+        node(block, "cashCollateralCondition").attrib.pop("cashCollateralVal")
+    else:
+        block.append(fromstring(f'<unexpected xmlns="{sec.NAMESPACE}">Y</unexpected>'))
+    with pytest.raises(sec.DataError):
+        parse(root)
+
+
+def test_known_common_namespaces_and_identifier_attribute_values():
+    root = xml_root()
+    row = node(root, "invstOrSec")
+    isin = node(row, "isin")
+    isin.tag = "{http://www.sec.gov/edgar/nportcommon}isin"
+    assert parse(root)["holdings"][0]["isin"] == ["TEST00000000"]
+    isin.tag = "{https://untrusted.invalid}isin"
+    with pytest.raises(sec.DataError, match="namespace"):
+        parse(root)
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [

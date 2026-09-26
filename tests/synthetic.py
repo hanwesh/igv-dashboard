@@ -114,10 +114,23 @@ def holdings(item: sec.Filing, *, allocation_delta="0") -> bytes:
                 "valUSD": format(weight * 10000, "f"),
                 "pctVal": format(weight, "f"),
                 "payoffProfile": "Long",
-                "assetCat": "EC",
-                "issuerCat": "CORP",
+                "assetCat": "STIV" if number in {6, 20} else "EC",
+                "issuerCat": "RF" if number in {6, 20} else "CORP",
             }.items():
                 node(row, key, value)
+            lending = SubElement(row, "securityLending")
+            if number == 6:
+                SubElement(
+                    lending, "cashCollateralCondition", isCashCollateral="Y",
+                    cashCollateralVal=format(weight * 10000, "f"),
+                )
+            else:
+                node(lending, "isCashCollateral", "N")
+            node(lending, "isNonCashCollateral", "N")
+            if number % 2 == 0 and number not in {6, 20}:
+                SubElement(lending, "loanByFundCondition", isLoanByFund="Y", loanVal="12.345")
+            else:
+                node(lending, "isLoanByFund", "N")
     notes = SubElement(form, "explntrNotes")
     node(notes, "note", "SYNTHETIC NARRATIVE MUST NEVER BE ARCHIVED")
     return tostring(root, encoding="utf-8", xml_declaration=True)
@@ -166,8 +179,8 @@ class Provider:
         if "/search-index?" in url:
             query = parse_qs(urlparse(url).query)
             assert query["q"] == [f'"{TEST_SERIES}"']
-            assert query["ciks"] == [str(int(sec.CIK))]
-            assert query["forms"] == ["NPORT-P,NPORT-P/A"]
+            assert query["ciks"] == [sec.CIK]
+            assert query["forms"] == ["NPORT-P"]
             records = [
                 record["filing"]
                 for record in self.records.values()

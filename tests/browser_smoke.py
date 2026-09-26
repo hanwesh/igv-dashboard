@@ -113,6 +113,9 @@ def smoke(page, origin, output, report):
     expect(page.locator("#quarter-note")).to_contain_text("Normalized immutable object SHA256")
     expect(page.locator("#source-notes")).to_contain_text("without normalization")
     expect(page.locator("#source-notes")).to_contain_text("no reported ticker")
+    expect(page.locator("#collateral-note")).to_contain_text("securities-lending collateral")
+    expect(page.locator("#quarter-note")).to_contain_text("All reported investments:")
+    expect(page.locator("#quarter-detail .category")).to_contain_text("Securities-lending collateral")
     expect(page.locator("#publication-lag")).to_contain_text("60 days")
     expect(page.locator("#chart-viewport")).to_be_hidden()
     assert widgets == []
