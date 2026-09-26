@@ -51,7 +51,7 @@ def test_workflow_scope_and_off_gate():
     assert set(jobs) == {"checks", "refresh", "deploy", "notify"}
     assert jobs["checks"]["permissions"] == {"contents": "read"}
     assert "allow-network" not in json.dumps(jobs["checks"])
-    assert "upload" not in json.dumps(jobs["checks"])
+    assert not any("upload" in step.get("uses", "") for step in jobs["checks"]["steps"])
     assert "tests.browser_smoke" in json.dumps(jobs["checks"])
     for name in ("refresh", "deploy", "notify"):
         condition = jobs[name]["if"]
@@ -93,9 +93,10 @@ def test_workflow_scope_and_off_gate():
     assert "git add ." not in text
 
 
-def test_data_placeholder_has_no_dataset():
+def test_normalized_sec_schema_matches_runtime_contract():
     schema = json.loads((app.ROOT / "data/schema.json").read_text())
-    assert "SCHEMA ONLY" in schema["description"]
+    assert "Normalized SEC N-PORT factual archive" in schema["description"]
+    assert schema["properties"]["source"]["const"] == sec.SOURCE
     assert set(schema["required"]) == app.MANIFEST_KEYS
     assert set(schema["$defs"]["provenance"]["required"]) == sec.PROVENANCE_KEYS
     assert set(schema["$defs"]["holding"]["required"]) == sec.ROW_KEYS

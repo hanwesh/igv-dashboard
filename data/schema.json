@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "IGV SEC N-PORT normalized archive manifest v2",
-  "description": "SCHEMA ONLY: no factual seed or verified SEC coverage is included. Python also verifies identity, source URLs, checksums, decimal precision, fiscal periods, amendments, complete rolling coverage and filing lag. External objects use the normalized_filing definition; raw XML and narrative are not permitted.",
+  "description": "Normalized SEC N-PORT factual archive. The audited initial seed retains 29 filings across 28 fiscal quarters, 2019-09-30 through 2026-06-30; the display rolls over the latest 20 consecutive quarters. Python also verifies identity, source URLs, checksums, decimal precision, fiscal periods, amendments, complete rolling coverage and filing lag. External objects use the normalized_filing definition; raw XML and narrative are not permitted.",
   "type": "object",
   "required": ["schema_version", "data_kind", "source", "identity", "discovery_start_date", "last_successful_data_refresh_utc", "data_through", "filings", "quarters"],
   "additionalProperties": false,

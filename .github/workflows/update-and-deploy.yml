@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Synthetic-only checks
+    name: Offline checks
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -31,7 +31,7 @@ jobs:
           cache: pip
       - name: Install declared dependencies
         run: python -m pip install -r requirements-dev.txt
-      - name: Lint and synthetic unit/workflow checks
+      - name: Lint, synthetic behavior and offline SEC seed checks
         run: |
           python -m ruff check .
           python -m ruff format --check .
@@ -40,13 +40,8 @@ jobs:
         run: python -m playwright install --with-deps chromium
       - name: Synthetic native-UI smoke check
         run: python -m tests.browser_smoke
-      - name: Offline SEC provenance check when a factual seed exists
-        run: |
-          if [[ -f data/manifest.json ]]; then
-            python igv_snapshot.py validate --allow-stale
-          else
-            echo 'No SEC factual seed: production refresh/build/deployment remains blocked.'
-          fi
+      - name: Offline SEC provenance and retained history check
+        run: python igv_snapshot.py validate --allow-stale
       - name: Report the publication boundary
         if: always()
         env:
@@ -54,7 +49,8 @@ jobs:
         run: |
           {
             echo '## SEC-only quarterly checks'
-            echo 'Tests use independently generated, test-only fixtures; no financial requests or data artifacts.'
+            echo 'Checks use synthetic behavior fixtures and offline normalized SEC seed regressions.'
+            echo 'No financial requests or uploaded report artifacts run in checks.'
             if [[ "$APPROVAL" != 'true' ]]; then
               echo '**Live refresh, archive commits, failure issues and Pages are OFF.**'
               echo 'SEC_PUBLICATION_APPROVED is not true. Keep the independent legacy DATA_PUBLICATION_APPROVED=false.'
