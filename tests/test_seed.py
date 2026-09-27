@@ -224,8 +224,19 @@ def test_filtered_seed_view_matches_full_unrounded_source_ranking(
     assert len(expected) == 10 and all(row["cusip"] for row in expected)
 
 
-# Independently recomputed from the audited seed: the operating company that securities-lending
-# cash collateral displaces from each displayed quarter's as-filed top ten.
+# The operating company that securities-lending cash collateral displaces from each displayed
+# quarter's as-filed top ten. These literals are transcribed from values derived independently
+# of this repository, and are deliberately not computed from the production code path.
+#
+# That independence is the point, not an oversight. The preceding
+# test_filtered_seed_view_matches_full_unrounded_source_ranking re-derives its expectation with
+# the same algorithm production uses, so it compares the implementation against itself: strong
+# against regressions, but structurally blind to a wrong shared assumption, which would sit on
+# both sides of that comparison equally. This table is the suite's only external evidence, so
+# it is the only check that fails if the view's premise is wrong rather than its code.
+#
+# Do not replace these literals with computed values, and do not delete the table as redundant
+# against that test: either change would keep the suite green while removing that protection.
 DISPLACED = [
     ("2021-09-30", "Zoom Video Communications Inc", "2.22"),
     ("2021-12-31", "Workday Inc", "2.04"),
