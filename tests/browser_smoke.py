@@ -74,6 +74,10 @@ def route_offline(page, origin, *, widget="mock"):
     return outside, widgets, errors
 
 
+def weight(value):
+    return f"{float(value):.2f}%"
+
+
 def check_download(page, output, report, kind, expected_count):
     link = page.locator(f"#download-{kind}")
     href = link.get_attribute("href")
@@ -87,6 +91,74 @@ def check_download(page, output, report, kind, expected_count):
     rows = list(csv.DictReader(io.StringIO(text)))
     assert len(rows) == expected_count
     assert {row["data_kind"] for row in rows} == {app.SYNTHETIC}
+
+
+def check_view_toggle(page, report):
+    first, last = report["snapshots"][0], report["snapshots"][-1]
+    page.locator("#year-select").select_option("")
+    page.locator("#holding-search").fill("")
+    page.locator("#security-select").select_option("")
+    view = page.locator("#holdings-view")
+    expect(view).to_have_value("as-filed")
+    expect(view).to_have_attribute("aria-describedby", "view-description")
+    expect(page.locator("label[for='holdings-view']")).to_contain_text("Holdings view")
+    expect(page.locator("#active-view-name")).to_have_text(
+        "As filed (SEC) / 20 quarters / 200 ranked positions"
+    )
+    expect(page.locator("#first-total")).to_have_text(weight(first["top10_weight_pct"]))
+    expect(page.locator("#last-total")).to_have_text(weight(last["top10_weight_pct"]))
+    expect(page.locator("#quarter-detail .category")).to_contain_text(
+        "Securities-lending collateral"
+    )
+    expect(page.locator('#security-select option[value="TEST00006"]')).to_have_count(1)
+    expect(page.locator('#security-select option[value="TEST00010"]')).to_have_count(0)
+
+    # The selector is reachable and operable by keyboard alone, from the last download link.
+    page.locator("#download-all").focus()
+    page.keyboard.press("Tab")
+    expect(view).to_be_focused()
+    page.keyboard.press("o")
+    expect(view).to_have_value("operating")
+    expect(page.locator("#active-view-name")).to_have_text(
+        "Operating companies only / 20 quarters / 200 ranked positions"
+    )
+    expect(page.locator("#detail-heading")).to_contain_text("Operating companies only")
+    expect(page.locator("#view-table-caption")).to_contain_text("Operating companies only.")
+    expect(page.locator("#view-description")).to_contain_text("not normalized to 100%")
+    expect(page.locator("#quarterly-body tr")).to_have_count(20)
+    expect(page.locator("#quarterly-body .cell")).to_have_count(200)
+    expect(page.locator(".holding-card")).to_have_count(10)
+    expect(page.locator("#quarter-detail")).not_to_contain_text("Securities-lending collateral")
+    expect(page.locator("#source-notes")).to_contain_text("not redistributed")
+    expect(page.locator("#first-total")).to_have_text(
+        weight(first["without_collateral"]["top10_weight_pct"])
+    )
+    expect(page.locator("#last-total")).to_have_text(
+        weight(last["without_collateral"]["top10_weight_pct"])
+    )
+    assert float(last["without_collateral"]["top10_weight_pct"]) < float(
+        last["top10_weight_pct"]
+    ), "Excluding a top-ten collateral slot must lower, never renormalize, the total"
+    expect(page.locator('#security-select option[value="TEST00006"]')).to_have_count(0)
+    expect(page.locator('#security-select option[value="TEST00010"]')).to_have_count(1)
+    page.keyboard.press("Shift+Tab")
+    expect(page.locator("#download-all")).to_be_focused()
+    page.keyboard.press("Tab")
+    page.keyboard.press("a")
+    expect(view).to_have_value("as-filed")
+    expect(page.locator("#quarter-detail .category")).to_contain_text(
+        "Securities-lending collateral"
+    )
+
+    # A security filter that only the as-filed view can satisfy resets and says so.
+    page.locator("#security-select").select_option("TEST00006")
+    expect(page.locator("#quarterly-body .match")).to_have_count(20)
+    view.select_option("operating")
+    expect(page.locator("#security-select")).to_have_value("")
+    expect(page.locator("#view-description")).to_contain_text("absent from this view")
+    expect(page.locator("#quarterly-body .match")).to_have_count(0)
+    view.select_option("as-filed")
+    expect(page.locator("#view-description")).not_to_contain_text("absent from this view")
 
 
 def smoke(page, origin, output, report):
@@ -149,7 +221,8 @@ def smoke(page, origin, output, report):
     expect(page.locator("#selected-date")).to_contain_text("FY 2029 Q1")
     expect(page.locator(".holding-card")).to_have_count(10)
     expect(page.locator("#row-count")).to_contain_text("downloads always include all 20")
-    for kind, count in [("wide", 20), ("long", 200)]:
+    check_view_toggle(page, report)
+    for kind, count in [("wide", 20), ("long", 200), ("all", report["full_position_count"])]:
         check_download(page, output, report, kind, count)
 
     page.locator("#load-chart").click()
@@ -165,6 +238,15 @@ def smoke(page, origin, output, report):
     assert widgets == [WIDGET_URL], "Holdings selection must not reload or synchronize the chart"
     expect(page.locator("#chart-help")).to_be_visible()
 
+    page.set_viewport_size({"width": 390, "height": 844})
+    expect(page.locator(".holding-card")).to_have_count(10)
+    for value in ("operating", "as-filed"):
+        page.locator("#holdings-view").select_option(value)
+        expect(page.locator("#holdings-view")).to_have_value(value)
+        expect(page.locator("#quarterly-body .cell")).to_have_count(200)
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), (
+            f"Horizontal overflow at 390px in the {value} view"
+        )
     page.set_viewport_size({"width": 375, "height": 812})
     expect(page.locator(".holding-card")).to_have_count(10)
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
@@ -243,11 +325,22 @@ def main():
                         outside, widgets, errors = route_offline(page, origin)
                         page.goto(origin + "/igv-dashboard/", wait_until="networkidle")
                         expect(page.locator("#test-banner")).to_be_visible()
-                        expect(page.locator("noscript p")).to_contain_text("both holdings CSV")
+                        expect(page.locator("noscript p")).to_contain_text(
+                            "all three holdings CSV links"
+                        )
+                        expect(page.locator("#view-controls")).to_be_hidden()
+                        expect(page.locator("#active-view-name")).to_contain_text("As filed (SEC)")
+                        expect(page.locator("#quarterly-body")).to_contain_text(
+                            "Securities-lending collateral"
+                        )
                         expect(page.locator("#quarterly-body tr")).to_have_count(20)
                         expect(page.locator("#quarterly-body .cell")).to_have_count(200)
                         expect(page.locator("#data-through")).to_have_text(TEST_END)
-                        for kind, count in [("wide", 20), ("long", 200)]:
+                        for kind, count in [
+                            ("wide", 20),
+                            ("long", 200),
+                            ("all", report["full_position_count"]),
+                        ]:
                             check_download(page, output, report, kind, count)
                         assert not outside and not widgets and not errors
                     finally:
@@ -259,10 +352,12 @@ def main():
             server.server_close()
             thread.join(timeout=5)
     print(
-        "PASS: synthetic Chromium smoke - 20 fiscal quarters / 200 positions, historical "
-        "identifiers, quarterly controls/search, exact CSVs, subpath, desktop/mobile, no-JS "
-        "table/downloads, filing-lag rollover and mocked hosted-chart success/error/timeout. "
-        "No financial network requests; temporary site/browser profiles removed."
+        "PASS: synthetic Chromium smoke - 20 fiscal quarters / 200 positions, as-filed and "
+        "operating-companies views with a keyboard-operable selector, historical identifiers, "
+        "quarterly controls/search, three exact CSVs, subpath, desktop/390px/375px, no-JS "
+        "as-filed table/downloads, filing-lag rollover and mocked hosted-chart "
+        "success/error/timeout. No financial network requests; temporary site/browser "
+        "profiles removed."
     )
 
 

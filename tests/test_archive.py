@@ -358,8 +358,11 @@ def test_site_and_csvs_are_exact_reproducible_relative_and_holdings_only(archive
     assert "__STATIC_TABLE__" not in page and "monthly-table" not in page
     assert "SYNTHETIC TEST ONLY" in page
     assert "priceByMonth" not in page and "download-performance" not in page
-    assert set(report["downloads"]) == {"long", "wide"}
-    for kind, count in [("wide", 20), ("long", 200)]:
+    assert set(report["downloads"]) == {"long", "wide", "all"}
+    assert "_all_holdings_quarterly_" in report["downloads"]["all"]
+    assert "_top10_quarterly_" in report["downloads"]["wide"]
+    assert "_top10_quarterly_" in report["downloads"]["long"]
+    for kind, count in [("wide", 20), ("long", 200), ("all", report["full_position_count"])]:
         filename = report["downloads"][kind]
         assert not filename.startswith("/")
         rows = list(

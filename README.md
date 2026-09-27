@@ -82,11 +82,38 @@ rank 6 at **5.868089075690%**; it ranked first in 2019-12 and 2020-03.
 Collateral classification requires an affirmative cash-collateral flag,
 cross-checked against asset category `STIV` and issuer category `RF`.
 Those categories alone are insufficient: an ordinary cash-management vehicle
-with the collateral flag `N` is not collateral. Both types remain visible.
-This **as-filed investment top ten** can differ from an iShares published
-holdings list because of the collateral inclusion, scope and reporting date;
-it is not an attempt to reproduce that product list. Weight changes also
-reflect prices, fund flows and corporate actions, not just purchases or sales.
+with the collateral flag `N` is not collateral. Two seed filings report a
+second, unflagged row on the **same title and CUSIP** as the flagged collateral,
+so a name, CUSIP or category rule would discard reported investments. Both
+types remain visible. This **as-filed investment top ten** can differ from an
+iShares published holdings list because of the collateral inclusion, scope and
+reporting date; it is not an attempt to reproduce that product list. Weight
+changes also reflect prices, fund flows and corporate actions, not just
+purchases or sales.
+
+### Holdings view: as filed, or operating companies only
+
+A **Holdings view** selector offers two readings of the same archive. No data
+is refiltered, refetched or recomputed from anything but the committed seed.
+
+- **As filed (SEC)** is the default and is unchanged. It mirrors the
+  investment schedule, collateral included. It is the only view a browser
+  without JavaScript renders, and the static table ships in that state.
+- **Operating companies only** drops **only** rows carrying the affirmative
+  cash-collateral flag, then reranks the **entire** remaining reported
+  portfolio by unrounded weight. It is not an equity-only classification:
+  unflagged cash-management vehicles and derivatives stay eligible.
+
+Neither view renormalizes. Surviving positions keep their exact as-filed
+percentage of net assets and the omitted weight is never redistributed, so
+the operating top ten simply totals less. Across the displayed window the
+as-filed top ten totals **52.78% to 65.29%** and the operating top ten
+**51.05% to 61.94%** — never 100%. Collateral occupies a top-ten slot in
+**19 of 20** quarters (as high as rank 3), so the operating view is usually
+what restores a tenth operating company: Cadence in seven quarters,
+CrowdStrike in five, Roper in two, and Zoom, Workday, Activision,
+MicroStrategy and Fortinet once each. In 2025-12 collateral fell outside the
+top ten and both views agree.
 
 None of the IGV seed filings supply exchange tickers. This is a property of
 the source, not a per-position data-quality failure. Security titles and issuer
@@ -129,19 +156,23 @@ synchronization. A chart quote does not imply fresh SEC holdings. TradingView
 branding and [widget attribution](https://www.tradingview.com/widget-docs/widgets/charts/advanced-chart/)
 must not be removed or obscured.
 
-There are exactly **two holdings CSV downloads**: wide (20 rows) and long
-(200 ranked positions). Both always represent the entire displayed rolling
-window, independent of interactive filters. They retain source-reported
-precision, filing URLs/accessions, fiscal dates, checksums and provenance;
-the long file includes identifiers and lending flags. Blank tickers remain
-blank in CSV. Spreadsheet-formula-like text is escaped with an apostrophe;
-genuine numeric negatives remain numbers.
+There are exactly **three holdings CSV downloads**. Two are as filed and
+unchanged by the selected view: wide (20 rows) and long (200 ranked positions).
+The third is the full reported portfolio for the displayed window (**2,420
+positions**), ranked as filed and carrying each row's collateral flag, so
+either ranking is reproducible offline from a download alone. All three always
+represent the entire displayed rolling window, independent of interactive
+filters. They retain source-reported precision, filing URLs/accessions, fiscal
+dates, checksums and provenance; the long and full files include identifiers
+and lending flags. Blank tickers remain blank in CSV. Spreadsheet-formula-like
+text is escaped with an apostrophe; genuine numeric negatives remain numbers.
 
 CSV filenames include the window and a content hash, so amended data cannot
 overwrite a download referenced by an older page. All download URLs are
-relative and work under `/igv-dashboard/`. The complete table, source links,
-reported/refresh dates and both downloads work without JavaScript. Interactive
-controls, the hosted chart and browser-clock stale updates require JavaScript.
+relative and work under `/igv-dashboard/`. The complete as-filed table, source
+links, reported/refresh dates and all three downloads work without JavaScript.
+The alternate view, interactive controls, the hosted chart and browser-clock
+stale updates require JavaScript.
 
 ## Normalized archive and refresh behavior
 
@@ -220,8 +251,10 @@ offline regression checks of the committed SEC seed. Ordinary tests make no
 financial requests. Chromium serves a temporary synthetic site on loopback
 under `/igv-dashboard/`, intercepts the widget with a mock, blocks all other
 external requests, and removes the site/profile afterward. It checks exact
-20/200 shapes, CUSIP/name-variant continuity, controls, source notes, downloads,
-desktop/mobile, no-JS behavior, stale rollover and widget success/error/timeout.
+20/200 shapes, CUSIP/name-variant continuity, controls, both holdings views
+with a keyboard-operated selector, source notes, three downloads,
+desktop/390px/375px, no-JS as-filed behavior, stale rollover and widget
+success/error/timeout.
 Real TradingView availability is independently verified, not inferred from this
 mock. Synthetic sites stay outside the repository and are never uploaded.
 
@@ -246,8 +279,9 @@ Only the owner performs activation after reviewing and merging this migration:
    an already-enabled Pages site.
 4. Explicitly set **`SEC_PUBLICATION_APPROVED=true`**, then dispatch the workflow
    from **main**. Verify the deployment URL, real chart/attribution, reported
-   dates, holdings and both downloads. This source-specific gate is not a license
-   attestation for other providers. No legacy pipeline is enabled.
+   dates, holdings, both holdings views and all three downloads. This
+   source-specific gate is not a license attestation for other providers.
+   No legacy pipeline is enabled.
 
 For owner-authorized local operation, first supply `SEC_USER_AGENT` privately
 in the environment. These scoped flags do not change repository variables:

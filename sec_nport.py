@@ -915,9 +915,9 @@ def validate_snapshot(snapshot: dict, identity: dict, now: datetime, kind: str) 
             raise DataError("IGV cash-collateral status and asset/issuer classification disagree")
 
 
-def ranked_snapshot(snapshot: dict, object_sha256: str) -> dict:
+def rank_holdings(holdings: list[dict]) -> list[dict]:
     rows = sorted(
-        snapshot["holdings"],
+        holdings,
         key=lambda row: (
             decimal(row["weight_pct"]),
             decimal(row["market_value_usd"]),
@@ -925,10 +925,29 @@ def ranked_snapshot(snapshot: dict, object_sha256: str) -> dict:
         ),
         reverse=True,
     )
-    top = [{**row, "rank": number} for number, row in enumerate(rows[:10], 1)]
-    total = decimal_sum(row["weight_pct"] for row in rows)
+    return [{**row, "rank": number} for number, row in enumerate(rows, 1)]
+
+
+def ranked_snapshot(
+    snapshot: dict, object_sha256: str, *, exclude_collateral: bool = False
+) -> dict:
+    rows = snapshot["holdings"]
+    eligible = (
+        [row for row in rows if row["security_lending"]["is_cash_collateral"] is not True]
+        if exclude_collateral
+        else rows
+    )
+    if len(eligible) < 10:
+        raise DataError("A complete top ten needs at least ten eligible reported positions")
+    top = rank_holdings(eligible)[:10]
+    total = decimal_sum(row["weight_pct"] for row in eligible)
     notes = []
-    if abs(Decimal(total) - 100) > Decimal("0.005"):
+    if exclude_collateral:
+        notes.append(
+            f"Reported investment weights excluding collateral total {total}% of net assets. "
+            "The omitted weights are not redistributed; neither view is normalized to 100%."
+        )
+    elif abs(Decimal(total) - 100) > Decimal("0.005"):
         notes.append(
             f"Reported investment weights total {total}% of net assets. "
             "The investment schedule need not total 100% (cash, liabilities and derivatives "
@@ -948,8 +967,9 @@ def ranked_snapshot(snapshot: dict, object_sha256: str) -> dict:
         )
     collateral_rows = [row for row in rows if row["security_lending"]["is_cash_collateral"] is True]
     if collateral_rows:
+        action = "Excludes" if exclude_collateral else "Includes"
         notes.append(
-            "Includes securities-lending cash collateral: "
+            f"{action} securities-lending cash collateral: "
             f"{decimal_sum(row['weight_pct'] for row in collateral_rows)}% of net assets. "
             "Collateral is a reported investment with an offsetting obligation elsewhere; "
             "it can lift total weights above 100% and change the as-filed top ten."
