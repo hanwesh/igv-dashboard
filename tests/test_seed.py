@@ -222,3 +222,188 @@ def test_filtered_seed_view_matches_full_unrounded_source_ranking(
         (Decimal(row["weight_pct"]) for row in expected), Decimal(0)
     )
     assert len(expected) == 10 and all(row["cusip"] for row in expected)
+
+
+# Independently recomputed from the audited seed: the operating company that securities-lending
+# cash collateral displaces from each displayed quarter's as-filed top ten.
+DISPLACED = [
+    ("2021-09-30", "Zoom Video Communications Inc", "2.22"),
+    ("2021-12-31", "Workday Inc", "2.04"),
+    ("2022-03-31", "Crowdstrike Holdings Inc", "2.12"),
+    ("2022-06-30", "Roper Technologies Inc", "2.41"),
+    ("2022-09-30", "Cadence Design Systems, Inc.", "2.77"),
+    ("2022-12-31", "Cadence Design Systems, Inc.", "2.72"),
+    ("2023-03-31", "Cadence Design Systems, Inc.", "3.04"),
+    ("2023-06-30", "Activision Blizzard, Inc.", "2.86"),
+    ("2023-09-30", "Cadence Design Systems, Inc.", "3.11"),
+    ("2023-12-31", "Roper Technologies, Inc.", "2.59"),
+    ("2024-03-31", "Crowdstrike Holdings, Inc.", "3.07"),
+    ("2024-06-30", "Cadence Design Systems, Inc.", "3.38"),
+    ("2024-09-30", "Cadence Design Systems, Inc.", "2.99"),
+    ("2024-12-31", "Crowdstrike Holdings, Inc.", "2.64"),
+    ("2025-03-31", "Cadence Design Systems, Inc.", "2.65"),
+    ("2025-06-30", "MicroStrategy, Inc.", "3.21"),
+    ("2025-09-30", "Crowdstrike Holdings, Inc.", "3.79"),
+    # Collateral fell outside this quarter's as-filed top ten, so both views agree.
+    ("2025-12-31", None, None),
+    ("2026-03-31", "Crowdstrike Holdings, Inc.", "4.21"),
+    ("2026-06-30", "Fortinet, Inc.", "3.62"),
+]
+
+
+@pytest.mark.parametrize(("reported", "name", "weight"), DISPLACED)
+def test_operating_view_promotes_the_company_collateral_displaced(
+    actual_seed, reported, name, weight
+):
+    _, validated = actual_seed
+    item = next(entry for entry in validated["snapshots"] if entry["reported_as_of"] == reported)
+    as_filed, operating = item["top10"], item["without_collateral"]["top10"]
+    flagged = [row for row in as_filed if row["security_lending"]["is_cash_collateral"] is True]
+    if name is None:
+        assert not flagged
+        assert operating == as_filed
+        return
+    assert len(flagged) == 1
+    promoted = operating[9]
+    assert promoted["name"] == name
+    assert Decimal(promoted["weight_pct"]).quantize(Decimal("0.01")) == Decimal(weight)
+    assert promoted["security_lending"]["is_cash_collateral"] is False
+    assert [row["cusip"] for row in operating] == [
+        row["cusip"] for row in as_filed if row["cusip"] != flagged[0]["cusip"]
+    ] + [promoted["cusip"]]
+
+
+def test_operating_view_keeps_as_filed_weights_and_is_never_normalized(actual_seed):
+    _, validated = actual_seed
+    totals = []
+    for item in validated["snapshots"]:
+        source = validated["all_filings"][item["provenance"]["accession"]]["holdings"]
+        reported = {row["source_row"]: row["weight_pct"] for row in source}
+        operating = item["without_collateral"]
+        assert all(row["weight_pct"] == reported[row["source_row"]] for row in operating["top10"])
+        assert Decimal(operating["top10_weight_pct"]) == sum(
+            Decimal(row["weight_pct"]) for row in operating["top10"]
+        )
+        omitted = sum(
+            Decimal(row["weight_pct"])
+            for row in source
+            if row["security_lending"]["is_cash_collateral"] is True
+        )
+        assert (
+            Decimal(operating["portfolio_weight_pct"])
+            == Decimal(item["portfolio_weight_pct"]) - omitted
+        )
+        assert Decimal(103) < Decimal(item["portfolio_weight_pct"]) < Decimal(114)
+        totals.append(Decimal(operating["top10_weight_pct"]))
+    assert all(Decimal("51.04") <= total <= Decimal("61.94") for total in totals)
+    assert min(totals).quantize(Decimal("0.01")) == Decimal("51.05")
+    assert max(totals).quantize(Decimal("0.01")) == Decimal("61.94")
+    assert not any(total == Decimal(100) for total in totals)
+
+
+def test_seed_cash_rows_are_separated_by_flag_not_name_cusip_or_category(actual_seed):
+    _, validated = actual_seed
+    flagged_cusips, unflagged_cusips, shared = set(), set(), 0
+    for item in validated["all_filings"].values():
+        cash = [
+            row
+            for row in item["holdings"]
+            if row["asset_category"] == "STIV" and row["issuer_category"] == "RF"
+        ]
+        assert cash, "every filing reports at least one STIV/RF cash vehicle"
+        flagged = [row for row in cash if row["security_lending"]["is_cash_collateral"] is True]
+        unflagged = [row for row in cash if row["security_lending"]["is_cash_collateral"] is False]
+        assert len(flagged) == 1 and len(cash) == len(flagged) + len(unflagged)
+        assert flagged[0]["cusip"] == "066922519"
+        assert flagged[0]["title"] == "BlackRock Cash Funds: Institutional, SL Agency Shares"
+        flagged_cusips.add(flagged[0]["cusip"])
+        unflagged_cusips.update(row["cusip"] for row in unflagged)
+        shared += sum(row["cusip"] == flagged[0]["cusip"] for row in unflagged)
+    # Ordinary cash management shares the collateral title and CUSIP in some filings, so a
+    # name, CUSIP or STIV/RF rule would wrongly discard reported investments.
+    assert unflagged_cusips == {"066922477", "066922519"}
+    assert flagged_cusips < unflagged_cusips and shared == 2
+
+
+def test_operating_view_retains_unflagged_cash_management_rows(actual_seed):
+    _, validated = actual_seed
+    quarters_with_cash_management = 0
+    for item in validated["snapshots"]:
+        source = validated["all_filings"][item["provenance"]["accession"]]["holdings"]
+        eligible = {
+            row["source_row"]
+            for row in source
+            if row["security_lending"]["is_cash_collateral"] is not True
+        }
+        dropped = {row["source_row"] for row in source} - eligible
+        assert len(dropped) == sum(
+            row["security_lending"]["is_cash_collateral"] is True for row in source
+        )
+        assert all(row["source_row"] in eligible for row in item["without_collateral"]["top10"])
+        cash = {
+            row["source_row"]
+            for row in source
+            if row["asset_category"] == "STIV" and row["issuer_category"] == "RF"
+        }
+        assert cash & dropped, "the flagged collateral row is always a reported cash vehicle"
+        retained = cash - dropped
+        quarters_with_cash_management += bool(retained)
+        assert retained <= eligible
+    # One displayed filing reports no separate cash-management vehicle; the rest keep theirs.
+    assert quarters_with_cash_management == len(validated["snapshots"]) - 1
+
+
+def test_seed_top_ten_cusip_appearances_are_stable_across_both_views(actual_seed):
+    _, validated = actual_seed
+    snapshots = validated["snapshots"]
+    as_filed = {group["cusip"]: group["appearances"] for group in app.security_groups(snapshots)}
+    assert sum(as_filed.values()) == 200 and len(as_filed) == 17
+    assert as_filed == {
+        "594918104": 20,  # Microsoft
+        "68389X105": 20,  # Oracle
+        "79466L302": 20,  # Salesforce
+        "81762P102": 20,  # ServiceNow
+        "00724F101": 19,  # Adobe
+        "461202103": 19,  # Intuit
+        "066922519": 19,  # BlackRock securities-lending cash collateral
+        "697435105": 18,  # Palo Alto Networks
+        "871607107": 12,  # Synopsys
+        "69608A108": 8,  # Palantir
+        "00507V109": 7,  # Activision Blizzard
+        "127387108": 5,  # Cadence Design Systems
+        "22788C105": 5,  # CrowdStrike
+        "03831W108": 4,  # AppLovin
+        "052769106": 2,  # Autodesk
+        "776696106": 1,  # Roper Technologies
+        "83304A106": 1,  # Snap
+    }
+    operating = {
+        group["cusip"]: group["appearances"]
+        for group in app.security_groups([item["without_collateral"] for item in snapshots])
+    }
+    assert sum(operating.values()) == 200 and "066922519" not in operating
+    # Excluding collateral surfaces three more issuers and never removes an as-filed company.
+    assert operating == {
+        "594918104": 20,  # Microsoft
+        "68389X105": 20,  # Oracle
+        "79466L302": 20,  # Salesforce
+        "81762P102": 20,  # ServiceNow
+        "00724F101": 19,  # Adobe
+        "461202103": 19,  # Intuit
+        "697435105": 18,  # Palo Alto Networks
+        "127387108": 12,  # Cadence Design Systems
+        "871607107": 12,  # Synopsys
+        "22788C105": 10,  # CrowdStrike
+        "00507V109": 8,  # Activision Blizzard
+        "69608A108": 8,  # Palantir
+        "03831W108": 4,  # AppLovin
+        "776696106": 3,  # Roper Technologies
+        "052769106": 2,  # Autodesk
+        "34959E109": 1,  # Fortinet
+        "594972408": 1,  # MicroStrategy
+        "83304A106": 1,  # Snap
+        "98138H101": 1,  # Workday
+        "98980L101": 1,  # Zoom Video Communications
+    }
+    assert set(as_filed) - set(operating) == {"066922519"}
+    assert all(operating[cusip] >= count for cusip, count in as_filed.items() if cusip in operating)
