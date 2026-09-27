@@ -165,3 +165,60 @@ def test_seed_cross_quarter_continuity_is_cusip_not_issuer_spelling(actual_seed)
     assert {"salesforce.com Inc", "Salesforce Inc", "Salesforce, Inc."} <= set(
         salesforce["search_terms"]
     )
+
+
+def test_original_as_filed_csv_bytes_do_not_change_for_the_second_view(actual_seed):
+    manifest, validated = actual_seed
+    originals = {accession: validated["all_filings"][accession] for _, accession, _, _ in BASELINE}
+    quarters = app.active_quarters(originals)
+    report = {
+        "snapshots": [
+            sec.ranked_snapshot(
+                originals[quarters[period]], manifest["filings"][quarters[period]]["sha256"]
+            )
+            for period in sorted(quarters)[-20:]
+        ],
+        "identity": manifest["identity"],
+        "data_kind": sec.PRODUCTION,
+    }
+    exports = app.export_csvs(report, all_filings=originals)
+    assert sec.digest(exports["long"].encode()) == (
+        "59f6c61060bb2736f98fb696e306607decb7a2330363b17537ed7f4dc0ff5421"
+    )
+    assert sec.digest(exports["wide"].encode()) == (
+        "6b6815d8b11a3a07e6b14c281c178fa7cf0e710873021074ac49730ea8b12cbf"
+    )
+
+
+@pytest.mark.parametrize(("reported", "accession", "count", "total"), BASELINE)
+def test_filtered_seed_view_matches_full_unrounded_source_ranking(
+    actual_seed, reported, accession, count, total
+):
+    _, validated = actual_seed
+    source = validated["all_filings"][accession]
+    eligible = [
+        row
+        for row in source["holdings"]
+        if row["security_lending"]["is_cash_collateral"] is not True
+    ]
+    expected = sorted(
+        eligible,
+        key=lambda row: (
+            Decimal(row["weight_pct"]),
+            Decimal(row["market_value_usd"]),
+            -row["source_row"],
+        ),
+        reverse=True,
+    )[:10]
+    filtered = sec.ranked_snapshot(source, "a" * 64, exclude_collateral=True)
+    assert filtered["reported_as_of"] == reported
+    assert filtered["source_row_count"] == count
+    assert [row["cusip"] for row in filtered["top10"]] == [row["cusip"] for row in expected]
+    assert [row["weight_pct"] for row in filtered["top10"]] == [
+        row["weight_pct"] for row in expected
+    ]
+    assert [row["rank"] for row in filtered["top10"]] == list(range(1, 11))
+    assert Decimal(filtered["top10_weight_pct"]) == sum(
+        (Decimal(row["weight_pct"]) for row in expected), Decimal(0)
+    )
+    assert len(expected) == 10 and all(row["cusip"] for row in expected)

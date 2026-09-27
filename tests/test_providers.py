@@ -50,13 +50,14 @@ def test_only_normalized_facts_survive():
         sec.check_hash(result["provenance"][field])
 
 
-def test_exact_source_weights_and_unrounded_ranking():
+@pytest.mark.parametrize("exclude_collateral", [False, True])
+def test_exact_source_weights_and_unrounded_ranking(exclude_collateral):
     root = xml_root()
     rows = node(root, "invstOrSecs")
     node(rows[0], "pctVal").text = "30.000000000002"
     node(rows[1], "pctVal").text = "30.000000000003"
     result = parse(root)
-    ranked = sec.ranked_snapshot(result, "a" * 64)
+    ranked = sec.ranked_snapshot(result, "a" * 64, exclude_collateral=exclude_collateral)
     assert [row["source_row"] for row in ranked["top10"][:2]] == [2, 1]
     assert ranked["top10"][0]["weight_pct"] == "30.000000000003"
     assert Decimal(ranked["top10_weight_pct"]) == sum(
@@ -64,22 +65,78 @@ def test_exact_source_weights_and_unrounded_ranking():
     )
 
 
-def test_ranking_does_not_round_36_digit_values():
+@pytest.mark.parametrize("exclude_collateral", [False, True])
+def test_ranking_does_not_round_36_digit_values(exclude_collateral):
     result = parse()
     first, second = result["holdings"][:2]
     first["weight_pct"] = "100000000000000000000000.000000000001"
     second["weight_pct"] = "100000000000000000000000.000000000002"
-    assert sec.ranked_snapshot(result, "a" * 64)["top10"][0]["source_row"] == 2
+    ranked = sec.ranked_snapshot(result, "a" * 64, exclude_collateral=exclude_collateral)
+    assert ranked["top10"][0]["source_row"] == 2
 
 
-def test_ties_use_value_then_source_order_without_ticker_assumptions():
+@pytest.mark.parametrize("exclude_collateral", [False, True])
+def test_ties_use_value_then_source_order_without_ticker_assumptions(exclude_collateral):
     result = parse()
     for row in result["holdings"]:
         row["weight_pct"] = "1"
         row["market_value_usd"] = "100"
     result["holdings"][5]["market_value_usd"] = "101"
-    ranked = sec.ranked_snapshot(result, "a" * 64)
+    ranked = sec.ranked_snapshot(result, "a" * 64, exclude_collateral=exclude_collateral)
     assert [row["source_row"] for row in ranked["top10"][:3]] == [6, 1, 2]
+
+
+def test_filtered_view_removes_only_affirmative_collateral_and_uses_full_portfolio():
+    result = parse()
+    rows = result["holdings"]
+    ordinary_cash = rows[20]
+    ordinary_cash["weight_pct"] = "40.000000000001"
+    ordinary_cash["title"] = rows[6]["title"]
+    unknown_flag = rows[21]
+    unknown_flag["weight_pct"] = "40.000000000002"
+    unknown_flag["security_lending"]["is_cash_collateral"] = None
+    original = copy.deepcopy(result)
+    default = sec.ranked_snapshot(result, "a" * 64)
+    filtered = sec.ranked_snapshot(result, "a" * 64, exclude_collateral=True)
+    assert result == original
+    assert [row["source_row"] for row in filtered["top10"][:2]] == [22, 21]
+    assert any(row["source_row"] == 7 for row in default["top10"])
+    assert all(row["source_row"] != 7 for row in filtered["top10"])
+    assert len(filtered["top10"]) == 10
+    assert [row["rank"] for row in filtered["top10"]] == list(range(1, 11))
+    assert all(
+        row["weight_pct"] == rows[row["source_row"] - 1]["weight_pct"] for row in filtered["top10"]
+    )
+    excluded = Decimal(rows[6]["weight_pct"])
+    assert (
+        Decimal(default["portfolio_weight_pct"]) - Decimal(filtered["portfolio_weight_pct"])
+        == excluded
+    )
+    assert f"Includes securities-lending cash collateral: {excluded}%" in " ".join(
+        default["quality_notes"]
+    )
+    assert f"Excludes securities-lending cash collateral: {excluded}%" in " ".join(
+        filtered["quality_notes"]
+    )
+
+
+def test_no_collateral_keeps_identical_rankings_in_both_views():
+    result = parse()
+    for row in result["holdings"]:
+        row["security_lending"]["is_cash_collateral"] = False
+        row["security_lending"]["cash_collateral_value_usd"] = None
+    default = sec.ranked_snapshot(result, "a" * 64)
+    filtered = sec.ranked_snapshot(result, "a" * 64, exclude_collateral=True)
+    for key in ("top10", "top10_weight_pct", "portfolio_weight_pct", "provenance"):
+        assert filtered[key] == default[key]
+
+
+def test_filtered_view_rejects_insufficient_eligible_rows():
+    result = parse()
+    result["holdings"] = result["holdings"][:10]
+    assert len(sec.ranked_snapshot(result, "a" * 64)["top10"]) == 10
+    with pytest.raises(sec.DataError, match="ten eligible"):
+        sec.ranked_snapshot(result, "a" * 64, exclude_collateral=True)
 
 
 def test_missing_historic_tickers_and_non_top_identifiers_are_preserved():
