@@ -69,8 +69,9 @@ the most recent check outcome; the refresh timestamp is not a scheduler heartbea
 to multiply by 100. Original decimal strings are retained. Ranking uses exact,
 unrounded weights, then reported USD value, then source row order. Display
 rounding to two decimals does not change ranking, concentration totals or CSV
-precision. All source row types remain eligible, including cash vehicles and
-derivatives. Legitimate zero/negative rows and null identifiers are retained.
+precision. All source row types remain eligible in the default as-filed view,
+including cash vehicles and derivatives. Legitimate zero/negative rows and
+null identifiers are retained.
 
 The full investment weights in the seed total **103.228492046366% to
 113.100937298738%**, roughly **103-113%**, and are **never renormalized**.
@@ -88,6 +89,27 @@ holdings list because of the collateral inclusion, scope and reporting date;
 it is not an attempt to reproduce that product list. Weight changes also
 reflect prices, fund flows and corporate actions, not just purchases or sales.
 
+The keyboard-accessible **Holdings view** selector offers two rankings over the
+same immutable SEC records:
+
+- **As filed (SEC)** is the default, including collateral. With JavaScript
+  disabled this is the only displayed view.
+- **Operating companies only** excludes positions only when
+  `security_lending.is_cash_collateral` is explicitly `true`, then takes the
+  highest ten unrounded weights from the **full remaining portfolio**, including
+  positions below the original top ten. Names, CUSIPs and asset/issuer categories
+  alone never drive this exclusion. Despite the short label, this is a
+  collateral-exclusion view, not a general equity-only classification: ordinary
+  cash management, derivatives and unknown flags remain eligible.
+
+Both views retain the exact source percentage-of-net-assets weights. Excluding
+collateral lowers the selected total when it occupied a top-ten slot; the
+omitted weight is **not redistributed or normalized to 100%**. The collateral
+note remains visible with the same exact percentage, described as included or
+excluded as appropriate. Quarter cards, table, concentration totals, CUSIP
+filters and appearance counts all follow the selected view. The independently
+hosted chart does not change.
+
 None of the IGV seed filings supply exchange tickers. This is a property of
 the source, not a per-position data-quality failure. Security titles and issuer
 names are shown as filed; CUSIP identifies every displayed top-ten position.
@@ -102,9 +124,10 @@ use **exact CUSIP**, never name spelling or fuzzy matching. A group's label is
 its most recent as-filed security title; individual rows keep their original
 titles. Search can resolve any historical title, issuer name, reported ticker
 or ISIN to that same CUSIP. A row without CUSIP is still displayed/searchable,
-but is not guessed into a cross-quarter group. The initial 20-quarter window
-has **17 CUSIPs**; Salesforce, Microsoft, Oracle and ServiceNow each appear
-in **20/20** quarters.
+but is not guessed into a cross-quarter group. The initial 20-quarter
+**as-filed** window has **17 CUSIPs**; Salesforce, Microsoft, Oracle and
+ServiceNow each appear in **20/20** quarters. A CUSIP filter is retained across
+view changes when present, otherwise visibly reset to all securities.
 
 ## Hosted chart and holdings downloads
 
@@ -129,19 +152,29 @@ synchronization. A chart quote does not imply fresh SEC holdings. TradingView
 branding and [widget attribution](https://www.tradingview.com/widget-docs/widgets/charts/advanced-chart/)
 must not be removed or obscured.
 
-There are exactly **two holdings CSV downloads**: wide (20 rows) and long
-(200 ranked positions). Both always represent the entire displayed rolling
-window, independent of interactive filters. They retain source-reported
-precision, filing URLs/accessions, fiscal dates, checksums and provenance;
-the long file includes identifiers and lending flags. Blank tickers remain
-blank in CSV. Spreadsheet-formula-like text is escaped with an apostrophe;
-genuine numeric negatives remain numbers.
+The original **two as-filed CSVs** remain unchanged: wide (20 rows) and long
+(200 ranked positions). Neither changes when the view or interactive filters
+change. The long file already has an explicit `is_cash_collateral` column.
+A third **full holdings CSV**, using the same long-format exporter, contains
+every source investment for those same 20 quarters (**2,420 rows in the initial
+window**), including the positions needed to refill the filtered top ten.
+Its `rank` is the full as-filed rank. To reproduce either view, group by reported
+date, optionally exclude only `is_cash_collateral=true`, sort by unrounded
+`weight_pct` descending, `market_value_usd` descending and `source_row` ascending,
+then take and re-rank the first ten. False or blank collateral flags are not
+excluded; percentages are never rescaled.
+
+All exports retain source-reported precision, filing URLs/accessions, fiscal
+dates, checksums and provenance; the long and full files include identifiers
+and lending flags. Blank tickers remain blank in CSV. Spreadsheet-formula-like
+text is escaped with an apostrophe; genuine numeric negatives remain numbers.
 
 CSV filenames include the window and a content hash, so amended data cannot
 overwrite a download referenced by an older page. All download URLs are
 relative and work under `/igv-dashboard/`. The complete table, source links,
-reported/refresh dates and both downloads work without JavaScript. Interactive
-controls, the hosted chart and browser-clock stale updates require JavaScript.
+reported/refresh dates and all downloads work without JavaScript. The alternate
+view, interactive controls, hosted chart and browser-clock stale updates require
+JavaScript.
 
 ## Normalized archive and refresh behavior
 
@@ -154,6 +187,7 @@ site/                         # ignored generated output
   index.html
   IGV_sec_nport_top10_quarterly_<window>_<hash>_wide.csv
   IGV_sec_nport_top10_quarterly_<window>_<hash>_long.csv
+  IGV_sec_nport_all_holdings_quarterly_<window>_<hash>_all.csv
 ```
 
 Each normalized object records the exact series, reported/fiscal dates, all
@@ -220,8 +254,10 @@ offline regression checks of the committed SEC seed. Ordinary tests make no
 financial requests. Chromium serves a temporary synthetic site on loopback
 under `/igv-dashboard/`, intercepts the widget with a mock, blocks all other
 external requests, and removes the site/profile afterward. It checks exact
-20/200 shapes, CUSIP/name-variant continuity, controls, source notes, downloads,
-desktop/mobile, no-JS behavior, stale rollover and widget success/error/timeout.
+20/200 shapes in both views, exact collateral exclusion and replacement ranks,
+CUSIP/name-variant continuity, keyboard controls, source notes, unchanged
+as-filed exports, full-portfolio reconstruction, desktop/mobile including
+390px, no-JS behavior, stale rollover and widget success/error/timeout.
 Real TradingView availability is independently verified, not inferred from this
 mock. Synthetic sites stay outside the repository and are never uploaded.
 
@@ -246,7 +282,7 @@ Only the owner performs activation after reviewing and merging this migration:
    an already-enabled Pages site.
 4. Explicitly set **`SEC_PUBLICATION_APPROVED=true`**, then dispatch the workflow
    from **main**. Verify the deployment URL, real chart/attribution, reported
-   dates, holdings and both downloads. This source-specific gate is not a license
+   dates, both holdings views and all downloads. This source-specific gate is not a license
    attestation for other providers. No legacy pipeline is enabled.
 
 For owner-authorized local operation, first supply `SEC_USER_AGENT` privately

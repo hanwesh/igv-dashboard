@@ -39,6 +39,7 @@ from sec_nport import (
     normalize_filing,
     parse_date,
     parse_utc,
+    rank_holdings,
     ranked_snapshot,
     require_publication,
     resolve_identity,
@@ -204,6 +205,9 @@ def validate_manifest(
         "snapshots": [
             {
                 **ranked_snapshot(item, hashes[item["provenance"]["accession"]]),
+                "without_collateral": ranked_snapshot(
+                    item, hashes[item["provenance"]["accession"]], exclude_collateral=True
+                ),
                 "revision_count": sum(
                     other["reported_as_of"] == item["reported_as_of"]
                     for other in snapshots.values()
@@ -405,6 +409,10 @@ def report_payload(manifest: dict, validated: dict) -> dict:
         "retained_filings": len(validated["all_filings"]),
         "snapshots": snapshots,
         "securities": security_groups(snapshots),
+        "securities_without_collateral": security_groups(
+            [item["without_collateral"] for item in snapshots]
+        ),
+        "full_position_count": sum(item["source_row_count"] for item in snapshots),
         "identifier_note": (
             "These SEC N-PORT filings supply no exchange tickers. Positions are identified "
             "by security title, issuer name, CUSIP and available ISIN; no tickers are inferred."
@@ -418,8 +426,11 @@ def report_payload(manifest: dict, validated: dict) -> dict:
             "Actual reported days are retained, including weekends; no exchange calendar is "
             "imposed. Rankings use the exact reported C.2(d) percentage of net assets (pctVal), "
             "then reported USD value and source row order, before display rounding. "
-            "All public row types remain eligible, including securities-lending collateral, "
-            "cash-management vehicles and derivatives. Collateral can raise the investment "
+            "The default as-filed view retains all row types, including securities-lending "
+            "collateral, cash-management vehicles and derivatives. The optional operating "
+            "companies view excludes only affirmatively flagged cash collateral, not all "
+            "non-company instruments, and reranks the full remaining portfolio. "
+            "Weights stay as filed in both views. Collateral can raise the investment "
             "total above 100% because its offsetting obligation is reported elsewhere; "
             "this as-filed top ten can differ from an issuer's equity-only holdings list. "
             "Zero/negative values are retained. No inferred historical tickers, "
@@ -427,8 +438,11 @@ def report_payload(manifest: dict, validated: dict) -> dict:
         ),
     }
     report["downloads"] = {
-        name: f"{stem}_{digest(content.encode())[:16]}_{name}.csv"
-        for name, content in export_csvs(report).items()
+        name: (
+            f"{stem.replace('_top10_', '_all_holdings_') if name == 'all' else stem}_"
+            f"{digest(content.encode())[:16]}_{name}.csv"
+        )
+        for name, content in export_csvs(report, all_filings=validated["all_filings"]).items()
     }
     return report
 
@@ -448,7 +462,7 @@ def csv_text(headers: list[str], rows: list[list]) -> str:
     return stream.getvalue()
 
 
-def export_csvs(report: dict) -> dict[str, str]:
+def export_csvs(report: dict, *, all_filings: dict[str, dict] | None = None) -> dict[str, str]:
     snapshots, kind, identity = report["snapshots"], report["data_kind"], report["identity"]
     provenance_fields = [
         "accession",
@@ -504,26 +518,29 @@ def export_csvs(report: dict) -> dict[str, str]:
         "is_loan_by_fund",
         "loan_value_usd",
     ]
+
+    def long_row(item, row):
+        values = {
+            **row,
+            "ticker": "; ".join(row["ticker"]),
+            "isin": "; ".join(row["isin"]),
+            **{key: decimal(row[key]) for key in ("weight_pct", "market_value_usd", "balance")},
+            **{
+                key: (
+                    decimal(value)
+                    if key.endswith("_usd") and value is not None
+                    else str(value).lower()
+                    if isinstance(value, bool)
+                    else value
+                )
+                for key, value in row["security_lending"].items()
+            },
+        }
+        return [*start(item), *[values[key] for key in long_fields], *finish(item)]
+
     long_rows, wide_rows = [], []
     for item in snapshots:
-        for row in item["top10"]:
-            values = {
-                **row,
-                "ticker": "; ".join(row["ticker"]),
-                "isin": "; ".join(row["isin"]),
-                **{key: decimal(row[key]) for key in ("weight_pct", "market_value_usd", "balance")},
-                **{
-                    key: (
-                        decimal(value)
-                        if key.endswith("_usd") and value is not None
-                        else str(value).lower()
-                        if isinstance(value, bool)
-                        else value
-                    )
-                    for key, value in row["security_lending"].items()
-                },
-            }
-            long_rows.append([*start(item), *[values[key] for key in long_fields], *finish(item)])
+        long_rows.extend(long_row(item, row) for row in item["top10"])
         wide_rows.append(
             [
                 *start(item),
@@ -535,7 +552,7 @@ def export_csvs(report: dict) -> dict[str, str]:
                 *finish(item),
             ]
         )
-    return {
+    exports = {
         "long": csv_text([*leading, *long_fields, *trailing], long_rows),
         "wide": csv_text(
             [
@@ -547,6 +564,14 @@ def export_csvs(report: dict) -> dict[str, str]:
             wide_rows,
         ),
     }
+    if all_filings is not None:
+        full_rows = [
+            long_row(item, row)
+            for item in snapshots
+            for row in rank_holdings(all_filings[item["provenance"]["accession"]]["holdings"])
+        ]
+        exports["all"] = csv_text([*leading, *long_fields, *trailing], full_rows)
+    return exports
 
 
 def static_table(report: dict) -> str:
@@ -639,8 +664,10 @@ def build_site(
                 or (
                     path.name not in {"index.html", ".nojekyll"}
                     and not re.fullmatch(
-                        r"(?:IGV|SYNTHETIC_TEST_ONLY)_sec_nport_top10_quarterly_"
-                        r"\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}_[a-f0-9]{16}_(?:wide|long)\.csv",
+                        r"(?:IGV|SYNTHETIC_TEST_ONLY)_sec_nport_"
+                        r"(?:top10|all_holdings)_quarterly_"
+                        r"\d{4}-\d{2}-\d{2}_to_\d{4}-\d{2}-\d{2}_"
+                        r"[a-f0-9]{16}_(?:wide|long|all)\.csv",
                         path.name,
                     )
                 )
@@ -651,7 +678,7 @@ def build_site(
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=".site-stage-", dir=output.parent) as temporary:
         stage = Path(temporary)
-        for name, content in export_csvs(report).items():
+        for name, content in export_csvs(report, all_filings=validated["all_filings"]).items():
             (stage / report["downloads"][name]).write_text(
                 content, encoding="utf-8-sig", newline=""
             )
@@ -729,7 +756,7 @@ def main(argv: list[str] | None = None) -> int:
             raise BlockedError("--allow-network is only valid for SEC acquisition")
         if args.command == "build":
             build_site(args.data_dir, args.output, test_only=args.test_only)
-            print("Built quarterly holdings with two relative holdings-only CSV downloads.")
+            print("Built two holdings views with as-filed and full-portfolio CSV downloads.")
         manifest = read_manifest(args.data_dir)
         validated = validate_manifest(
             manifest,

@@ -358,8 +358,9 @@ def test_site_and_csvs_are_exact_reproducible_relative_and_holdings_only(archive
     assert "__STATIC_TABLE__" not in page and "monthly-table" not in page
     assert "SYNTHETIC TEST ONLY" in page
     assert "priceByMonth" not in page and "download-performance" not in page
-    assert set(report["downloads"]) == {"long", "wide"}
-    for kind, count in [("wide", 20), ("long", 200)]:
+    assert set(report["downloads"]) == {"long", "wide", "all"}
+    assert report["full_position_count"] == 440
+    for kind, count in [("wide", 20), ("long", 200), ("all", 440)]:
         filename = report["downloads"][kind]
         assert not filename.startswith("/")
         rows = list(
@@ -376,6 +377,43 @@ def test_site_and_csvs_are_exact_reproducible_relative_and_holdings_only(archive
             assert [row["weight_pct"] for row in rows] == [row["weight_pct"] for row in expected]
             assert [row["rank"] for row in rows] == [str(row["rank"]) for row in expected]
             assert rows[1]["ticker"] == ""
+
+
+def test_full_csv_reproduces_both_views_and_retains_non_top_rows(archive):
+    manifest, validated = app.read_manifest(archive), validate(archive)
+    report = app.report_payload(manifest, validated)
+    exports = app.export_csvs(report, all_filings=validated["all_filings"])
+    assert {name: exports[name] for name in ("wide", "long")} == app.export_csvs(report)
+    full_rows = list(csv.DictReader(io.StringIO(exports["all"])))
+    assert len(full_rows) == report["full_position_count"]
+    assert {row["weight_pct"] for row in full_rows} >= {"0", "-0.25"}
+    assert any(row["cusip"] == "" and row["isin"] == "" for row in full_rows)
+    for snapshot in report["snapshots"]:
+        rows = [row for row in full_rows if row["reported_as_of"] == snapshot["reported_as_of"]]
+        for exclude_collateral in (False, True):
+            expected = snapshot["without_collateral"] if exclude_collateral else snapshot
+            eligible = [
+                row for row in rows if not exclude_collateral or row["is_cash_collateral"] != "true"
+            ]
+            selected = sorted(
+                eligible,
+                key=lambda row: (
+                    sec.decimal(row["weight_pct"]),
+                    sec.decimal(row["market_value_usd"]),
+                    -int(row["source_row"]),
+                ),
+                reverse=True,
+            )[:10]
+            assert [row["source_row"] for row in selected] == [
+                str(row["source_row"]) for row in expected["top10"]
+            ]
+            assert [row["weight_pct"] for row in selected] == [
+                row["weight_pct"] for row in expected["top10"]
+            ]
+            assert (
+                sec.decimal_sum(row["weight_pct"] for row in selected)
+                == expected["top10_weight_pct"]
+            )
 
 
 def test_amendment_site_promotion_failure_preserves_original_html_and_downloads(
@@ -427,6 +465,14 @@ def test_html_json_and_csv_formula_safety(archive, tmp_path):
     assert rows[-10]["name"].startswith("'=")
     assert rows[-10]["ticker"] == "'+TEST"
     assert rows[-10]["cusip"] == "'@TEST"
+    full_rows = list(
+        csv.DictReader(
+            io.StringIO((output / report["downloads"]["all"]).read_text(encoding="utf-8-sig"))
+        )
+    )
+    assert full_rows[-22]["name"].startswith("'=")
+    assert full_rows[-22]["ticker"] == "'+TEST"
+    assert full_rows[-22]["cusip"] == "'@TEST"
     text = app.csv_text(["text", "number"], [["\t=1", sec.decimal("-0.25")]])
     assert "'\t=1" in text and ",-0.25" in text
 

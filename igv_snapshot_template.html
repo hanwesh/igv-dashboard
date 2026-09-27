@@ -42,6 +42,8 @@
     .controls input { width: 240px; max-width: 100%; }
     .controls label { max-width: 100%; min-width: 0; }
     #security-select { width: 320px; max-width: 100%; }
+    #holdings-view { max-width: 100%; }
+    #view-description { flex: 1 1 320px; margin: 0; }
     #row-count { font-size: 12px; color: #556875; padding: 12px 0; margin-left: auto; }
     .table-scroll { overflow: auto; max-height: 850px; }
     table { width: 100%; min-width: 1500px; border-collapse: separate; border-spacing: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -91,14 +93,19 @@
         <p class="subtle">A refresh date is not a holdings date. Unchanged daily checks do not reset this timestamp.</p>
       </div>
       <div class="downloads">
-        <a class="download primary" id="download-wide" href="__CSV_WIDE__" download>Quarterly holdings CSV</a>
-        <a class="download" id="download-long" href="__CSV_LONG__" download>200-position holdings CSV</a>
+        <a class="download primary" id="download-wide" href="__CSV_WIDE__" download>As-filed quarterly CSV</a>
+        <a class="download" id="download-long" href="__CSV_LONG__" download>As-filed 200-position CSV</a>
+        <a class="download" id="download-all" href="__CSV_ALL__" download>Full holdings CSV (both views)</a>
       </div>
     </header>
     <p class="source-note" id="stale-warning" role="status" hidden></p>
     <p class="subtle" id="publication-lag"></p>
     <p class="subtle" id="identifier-note">__IDENTIFIER_NOTE__</p>
-    <p class="source-note" id="collateral-note"><strong>As-filed top ten, including securities-lending collateral.</strong> N-PORT includes cash collateral and cash-management positions, not just equities. Securities-lending collateral has an offsetting obligation elsewhere, so investment weights can exceed 100% and this list can differ from the issuer's published top ten. We never renormalize or silently exclude them.</p>
+    <p class="source-note" id="collateral-note"><strong>The SEC investment schedule includes securities-lending collateral.</strong> N-PORT includes cash collateral and cash-management positions, not just equities. Securities-lending collateral has an offsetting obligation elsewhere, so investment weights can exceed 100% and the as-filed list can differ from the issuer's published top ten. The default view includes it; the optional view excludes only affirmatively flagged cash collateral. We never renormalize weights.</p>
+    <div class="panel controls" id="view-controls" hidden>
+      <label for="holdings-view">Holdings view<select id="holdings-view" aria-describedby="view-description"><option value="as-filed">As filed (SEC)</option><option value="operating">Operating companies only</option></select></label>
+      <p class="subtle" id="view-description" role="status"></p>
+    </div>
     <section class="panel" id="chart-panel" aria-labelledby="chart-heading">
       <div class="panel-head">
         <div><div class="eyebrow">Independent hosted chart</div><h2 id="chart-heading">IGV price chart by TradingView</h2></div>
@@ -115,7 +122,7 @@
         <a id="chart-help" href="https://www.tradingview.com/symbols/AMEX-IGV/" target="_blank" rel="noopener noreferrer">Open IGV on TradingView if the chart is unavailable</a>.</p>
     </section>
     <section class="stats" id="stats" aria-label="Holdings summary" hidden>
-      <div class="stat"><span>Reported fiscal quarters</span><strong id="coverage"></strong><span>20 quarters / 200 ranked positions</span></div>
+      <div class="stat"><span id="active-view-name">As filed (SEC)</span><strong id="coverage"></strong><span>20 quarters / 200 ranked positions</span></div>
       <div class="stat"><span id="first-total-label"></span><strong id="first-total"></strong><span>Reported percentage of net assets</span></div>
       <div class="stat"><span id="last-total-label"></span><strong id="last-total"></strong><span>Reported percentage of net assets</span></div>
       <div class="stat"><span>Concentration change</span><strong id="total-change"></strong><span>Percentage points, not a price return</span></div>
@@ -139,7 +146,7 @@
       </div>
       <div class="table-scroll" tabindex="0" role="region" aria-label="Scrollable quarterly holdings table">
         <table id="quarterly-table">
-          <caption>Fiscal labels follow the filing's stated year end. Exact reported dates appear below. Both CSVs always contain these same 20 quarters/top ten, independent of interactive filters; scroll horizontally on small screens.</caption>
+          <caption id="view-table-caption">As filed (SEC). Fiscal labels follow the filing's stated year end. The two top-ten CSVs stay as filed in either view; the full holdings CSV includes all source positions for these 20 quarters to reproduce either ranking. Downloads are independent of interactive filters; scroll horizontally on small screens.</caption>
           <thead><tr><th scope="col">Fiscal quarter / reported</th><th scope="col">#1</th><th scope="col">#2</th><th scope="col">#3</th><th scope="col">#4</th><th scope="col">#5</th><th scope="col">#6</th><th scope="col">#7</th><th scope="col">#8</th><th scope="col">#9</th><th scope="col">#10</th><th scope="col">Top 10 total</th></tr></thead>
           <tbody id="quarterly-body">__STATIC_TABLE__</tbody>
         </table>
@@ -152,20 +159,23 @@
         <p id="identity-note"></p>
         <p>Only normalized factual holdings and metadata are archived, not full filing XML, narrative notes or signatures. SEC publication is not a blanket public-domain designation or a third-party data license. The source links identify the original filings; this project does not license their prose or other third-party materials.</p>
         <p>Amendments supersede their original reported period by acceptance time, then accession. Prior normalized versions and older reported quarters remain archived. Additional public reporting months are not counted as quarterly portfolios.</p>
-        <p>Weights are percentages of fund net assets, not of the selected ten. Securities-lending cash collateral is identified by the filing's affirmative collateral flag and cross-checked against STIV/RF asset and issuer categories. Other cash-management vehicles are not silently called collateral. The investment schedule need not sum to 100% because of cash, liabilities or derivatives. Zero/negative values and unusual reported totals are retained, not normalized. Holdings changes do not measure purchases or sales: prices, fund flows and corporate actions also affect weights.</p>
+        <p>Weights are percentages of fund net assets, not of the selected ten. Securities-lending cash collateral is identified by the filing's affirmative collateral flag and cross-checked against STIV/RF asset and issuer categories. Other cash-management vehicles are not silently called collateral. The optional operating-companies view excludes only that affirmative flag, then reranks the entire remaining portfolio by unrounded weights. It is not an equity-only classification: other cash vehicles and derivatives remain eligible. No omitted weight is redistributed to the remaining positions. The investment schedule need not sum to 100% because of cash, liabilities or derivatives. Zero/negative values and unusual reported totals are retained, not normalized. Holdings changes do not measure purchases or sales: prices, fund flows and corporate actions also affect weights.</p>
         <div id="source-notes"></div>
         <p id="retention-note"></p>
         <p>TradingView retains its widget branding and attribution. Its hosted chart is not a downloadable data feed or part of the SEC archive. No prices are scraped, stored or included in the holdings CSVs. Historical holdings are not investment advice.</p>
       </details>
     </section>
     <footer>Source-specific SEC facts archive / Hosted chart by TradingView / No affiliation with SEC, the fund or TradingView.</footer>
-    <noscript><p>The reported table and both holdings CSV links work without JavaScript. Interactive selection and the hosted chart need JavaScript. The stated holdings and refresh dates remain visible, but the browser cannot update the filing-lag warning.</p></noscript>
+    <noscript><p>The default As filed (SEC) table and all three holdings CSV links work without JavaScript. The alternate view, interactive selection and the hosted chart need JavaScript. The stated holdings and refresh dates remain visible, but the browser cannot update the filing-lag warning.</p></noscript>
   </main>
   <script id="igv-data" type="application/json">__IGV_DATA__</script>
   <script>
     "use strict";
     const report = JSON.parse(document.getElementById("igv-data").textContent);
     const snapshots = report.snapshots;
+    let operatingOnly = false;
+    const holdingsView = item => operatingOnly ? item.without_collateral : item;
+    const securitiesForView = () => operatingOnly ? report.securities_without_collateral : report.securities;
     const byId = id => document.getElementById(id);
     const pct = value => Number(value).toFixed(2) + "%";
     const label = item => "FY " + item.fiscal_year_end.slice(0, 4) + " Q" + item.fiscal_quarter;
@@ -185,14 +195,10 @@
       return node;
     };
     const first = snapshots[0], last = snapshots[snapshots.length - 1];
-    for (const id of ["stats", "detail-panel", "controls"]) byId(id).hidden = false;
+    for (const id of ["stats", "detail-panel", "controls", "view-controls"]) byId(id).hidden = false;
     byId("coverage").textContent = snapshots.length + " / 20";
     byId("first-total-label").textContent = "Top 10 / " + label(first);
     byId("last-total-label").textContent = "Top 10 / " + label(last);
-    byId("first-total").textContent = pct(first.top10_weight_pct);
-    byId("last-total").textContent = pct(last.top10_weight_pct);
-    const change = Number(last.top10_weight_pct) - Number(first.top10_weight_pct);
-    byId("total-change").textContent = (change >= 0 ? "+" : "") + change.toFixed(2) + " pp";
     byId("methodology").textContent = report.methodology;
     byId("identity-note").textContent = report.fund_name + " / Registrant CIK " + report.identity.registrant_cik + " / Series " + report.identity.series_id + " / Class " + report.identity.class_id + ".";
     byId("retention-note").textContent = report.retained_quarters + " reported fiscal quarters and " + report.retained_filings + " normalized filings retained, including superseded amendments and any additional reported months.";
@@ -210,26 +216,21 @@
       const option = make("option", "", label(item) + " / " + item.reported_as_of);
       option.value = item.reported_as_of;
       byId("quarter-select").append(option);
-      for (const note of item.quality_notes) byId("source-notes").append(make("p", "source-note", item.reported_as_of + ": " + note));
     }
     for (const year of [...new Set(snapshots.map(item => item.reported_as_of.slice(0, 4)))]) {
       const option = make("option", "", year);
       option.value = year;
       byId("year-select").append(option);
     }
-    for (const group of report.securities) {
-      const option = make("option", "", group.label + " / " + group.cusip + " (" + group.appearances + "/" + snapshots.length + " quarters)");
-      option.value = group.cusip;
-      byId("security-select").append(option);
-    }
     function selectQuarter(reported) {
       const item = snapshots.find(snapshot => snapshot.reported_as_of === reported);
+      const active = holdingsView(item);
       byId("quarter-select").value = reported;
       byId("selected-date").textContent = label(item) + " / Reported as of " + reported + " / Fiscal year end " + item.fiscal_year_end;
       const provenance = item.provenance;
       byId("selected-filing").textContent = provenance.form + " / Filed " + provenance.filing_date + " / Accepted " + provenance.accepted_at_utc + " / " + item.revision_count + " retained version(s)";
       byId("quarter-detail").replaceChildren();
-      for (const row of item.top10) {
+      for (const row of active.top10) {
         const card = make("div", "holding-card");
         card.append(make("div", "rank", "#" + row.rank + " / " + row.asset_category));
         card.append(make("div", "security-title", row.title));
@@ -242,20 +243,20 @@
       }
       const notes = byId("quarter-note");
       notes.replaceChildren();
-      notes.append(make("p", "", "Reported net-asset weight of top ten: " + pct(item.top10_weight_pct) + ". All reported investments: " + pct(item.portfolio_weight_pct) + ". Full source row count: " + item.source_row_count + "."));
+      notes.append(make("p", "", "Reported net-asset weight of this view's top ten: " + pct(active.top10_weight_pct) + ". All reported investments: " + pct(item.portfolio_weight_pct) + ". Full source row count: " + item.source_row_count + "."));
       notes.append(sourceLink(provenance.source_url, "Original SEC XML"), document.createTextNode(" / "), sourceLink(provenance.filing_url, "SEC filing index"));
       notes.append(make("p", "", "Accession " + provenance.accession + " / Retrieved " + provenance.retrieved_at_utc));
       notes.append(make("p", "", "Original XML SHA256: " + provenance.source_sha256));
       notes.append(make("p", "", "Normalized immutable object SHA256: " + item.object_sha256));
       if (item.identifier_note && !snapshots.every(snapshot => snapshot.identifier_note)) notes.append(make("p", "subtle", item.identifier_note));
-      for (const note of item.quality_notes) notes.append(make("p", "source-note", note));
+      for (const note of active.quality_notes) notes.append(make("p", "source-note", note));
     }
     function renderTable() {
       const year = byId("year-select").value;
       const query = byId("holding-search").value.trim().toLocaleLowerCase();
       const selectedCusip = byId("security-select").value;
-      const matchingCusips = new Set(report.securities.filter(group => group.search_terms.some(term => term.toLocaleLowerCase().includes(query))).map(group => group.cusip));
-      let visible = snapshots.filter(item => (!year || item.reported_as_of.startsWith(year + "-")) && (!selectedCusip || item.top10.some(row => row.cusip === selectedCusip)));
+      const matchingCusips = new Set(securitiesForView().filter(group => group.search_terms.some(term => term.toLocaleLowerCase().includes(query))).map(group => group.cusip));
+      let visible = snapshots.filter(item => (!year || item.reported_as_of.startsWith(year + "-")) && (!selectedCusip || holdingsView(item).top10.some(row => row.cusip === selectedCusip)));
       if (byId("order-select").value === "desc") visible = visible.slice().reverse();
       byId("quarterly-body").replaceChildren();
       for (const item of visible) {
@@ -270,7 +271,7 @@
         date.append(sourceLink(item.provenance.filing_url, item.reported_as_of));
         heading.append(button, date);
         tr.append(heading);
-        for (const row of item.top10) {
+        for (const row of holdingsView(item).top10) {
           const cell = make("div", "cell");
           cell.title = row.title + " / Issuer: " + row.name + " / " + identifiers(row);
           const searchable = [...row.ticker, row.name, row.title, row.cusip || "", ...row.isin].join(" ").toLocaleLowerCase();
@@ -280,18 +281,52 @@
           td.append(cell);
           tr.append(td);
         }
-        tr.append(make("td", "", pct(item.top10_weight_pct)));
+        tr.append(make("td", "", pct(holdingsView(item).top10_weight_pct)));
         byId("quarterly-body").append(tr);
       }
-      byId("row-count").textContent = visible.length + " quarters / " + visible.length * 10 + " positions; downloads always include all 20 quarters";
+      byId("row-count").textContent = visible.length + " quarters / " + visible.length * 10 + " positions; top-ten CSVs stay as filed; downloads always include all 20 quarters";
+    }
+    function renderHoldingsView() {
+      operatingOnly = byId("holdings-view").value === "operating";
+      const viewName = operatingOnly ? "Operating companies only" : "As filed (SEC)";
+      byId("active-view-name").textContent = viewName;
+      byId("detail-heading").textContent = viewName + " / selected reported quarter";
+      byId("first-total").textContent = pct(holdingsView(first).top10_weight_pct);
+      byId("last-total").textContent = pct(holdingsView(last).top10_weight_pct);
+      const change = Number(holdingsView(last).top10_weight_pct) - Number(holdingsView(first).top10_weight_pct);
+      byId("total-change").textContent = (change >= 0 ? "+" : "") + change.toFixed(2) + " pp";
+      const previousCusip = byId("security-select").value;
+      const allOption = make("option", "", "All securities (CUSIP)");
+      allOption.value = "";
+      byId("security-select").replaceChildren(allOption);
+      const groups = securitiesForView();
+      for (const group of groups) {
+        const option = make("option", "", group.label + " / " + group.cusip + " (" + group.appearances + "/" + snapshots.length + " quarters)");
+        option.value = group.cusip;
+        byId("security-select").append(option);
+      }
+      const keepSelection = !previousCusip || groups.some(group => group.cusip === previousCusip);
+      byId("security-select").value = keepSelection ? previousCusip : "";
+      byId("view-description").textContent = (operatingOnly
+        ? "Excludes only SEC-flagged cash collateral and reranks the remaining source positions. The top-ten total is lower where collateral occupied a slot; weights stay as filed, not normalized to 100%. Other cash-management and derivative positions remain eligible."
+        : "Mirrors the SEC investment schedule, including collateral. Weights are reported percentages of net assets, not normalized to 100%.")
+        + (keepSelection ? "" : " The selected CUSIP is absent from this view; the security filter has reset to all securities.");
+      byId("view-table-caption").textContent = viewName + ". Fiscal labels follow the filing's stated year end. The two top-ten CSVs stay as filed in either view; the full holdings CSV includes all source positions for these 20 quarters to reproduce either ranking. Downloads are independent of interactive filters; scroll horizontally on small screens.";
+      byId("source-notes").replaceChildren();
+      for (const item of snapshots) {
+        for (const note of holdingsView(item).quality_notes) byId("source-notes").append(make("p", "source-note", item.reported_as_of + ": " + note));
+      }
+      selectQuarter(byId("quarter-select").value || last.reported_as_of);
+      renderTable();
     }
     byId("quarter-select").addEventListener("change", event => selectQuarter(event.target.value));
     byId("year-select").addEventListener("change", renderTable);
     byId("order-select").addEventListener("change", renderTable);
     byId("security-select").addEventListener("change", renderTable);
     byId("holding-search").addEventListener("input", renderTable);
-    selectQuarter(last.reported_as_of);
-    renderTable();
+    byId("holdings-view").addEventListener("change", renderHoldingsView);
+    byId("quarter-select").value = last.reported_as_of;
+    renderHoldingsView();
     byId("load-chart").addEventListener("click", () => {
       byId("load-chart").disabled = true;
       byId("chart-viewport").hidden = false;
