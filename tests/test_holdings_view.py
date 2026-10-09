@@ -227,6 +227,9 @@ def test_built_page_defaults_to_as_filed_without_javascript(archive, tmp_path):
     assert page.index('<option value="as-filed">') < page.index('<option value="operating">')
     assert '<label for="holdings-view">Holdings view<select id="holdings-view"' in page
     assert 'id="active-view-name">As filed (SEC)<' in page
+    assert '<ol class="quarter-chart" id="quarter-detail"' in page
+    assert 'id="bar-scale-note"' in page
+    assert "holding-card" not in page
     assert page.count('id="view-table-caption">As filed (SEC).') == 1
     for kind in ("wide", "long", "all"):
         assert f'href="{report["downloads"][kind]}" download' in page
