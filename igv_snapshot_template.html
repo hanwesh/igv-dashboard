@@ -30,12 +30,20 @@
     .stat span { font-size: 12px; color: #556875; }
     .panel { background: #fff; border: 1px solid #dce4e7; border-radius: 12px; overflow: hidden; margin-bottom: 20px; }
     .panel-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding: 20px; border-bottom: 1px solid #e4eaed; }
-    .quarter-detail { padding: 20px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
-    .holding-card { border: 1px solid #dce4e7; border-radius: 9px; padding: 12px; min-width: 0; overflow-wrap: anywhere; }
-    .holding-card .rank { font-size: 11px; font-weight: 700; color: #637984; }
-    .holding-card .security-title { font-size: 17px; font-weight: 750; margin-top: 6px; }
-    .holding-card .weight { font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; margin: 3px 0; }
-    .holding-card .name, .holding-card .identifier { font-size: 11px; color: #536672; line-height: 1.5; margin-top: 6px; }
+    .quarter-chart { list-style: none; margin: 0; padding: 20px; display: grid; gap: 10px; }
+    .holding-bar { display: grid; grid-template-columns: minmax(250px, .9fr) minmax(180px, 1.35fr) 72px; grid-template-areas: "label track value"; align-items: center; gap: 12px; border-bottom: 1px solid #e4eaed; padding: 10px 0 12px; min-width: 0; }
+    .holding-bar:last-child { border-bottom: 0; }
+    .bar-label { grid-area: label; min-width: 0; overflow-wrap: anywhere; }
+    .holding-bar .rank { font-size: 11px; font-weight: 700; color: #637984; }
+    .holding-bar .security-title { font-size: 15px; font-weight: 750; margin-top: 3px; }
+    .holding-bar .weight { grid-area: value; font-size: 17px; font-weight: 750; font-variant-numeric: tabular-nums; text-align: right; }
+    .bar-track { grid-area: track; height: 28px; overflow: hidden; border: 1px solid #cddade; border-radius: 6px; background: #edf3f4; }
+    .bar-fill { display: block; height: 100%; background: #175b59; }
+    .holding-bar.collateral .bar-fill { background: #936012; }
+    .bar-meta { display: flex; flex-wrap: wrap; gap: 2px 10px; margin-top: 4px; font-size: 11px; color: #536672; line-height: 1.45; }
+    .bar-meta span { overflow-wrap: anywhere; }
+    .bar-meta .category { display: inline; margin-top: 0; }
+    .quarter-scale-note { padding: 14px 20px 0; margin: 0; }
     .quarter-note { padding: 0 20px 20px; font-size: 13px; color: #536672; overflow-wrap: anywhere; }
     .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; padding: 16px 20px; background: #f8fafb; }
     label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 650; }
@@ -76,8 +84,8 @@
     .blue-text { color: #2962ff; }
     noscript p { padding: 20px; background: #fff0c9; }
     [hidden] { display: none !important; }
-    @media (max-width: 950px) { main { padding: 20px; } .quarter-detail { gap: 8px; } .holding-card { padding: 9px; } .holding-card .weight { font-size: 21px; } }
-    @media (max-width: 720px) { main { padding: 16px; } .stats { grid-template-columns: repeat(2, 1fr); } .quarter-detail { grid-template-columns: repeat(2, minmax(0, 1fr)); } .stat { padding: 14px; } .stat strong { font-size: 24px; } .panel-head, .controls { padding: 16px; } #row-count { margin-left: 0; } .chart-viewport { height: 430px; } }
+    @media (max-width: 950px) { main { padding: 20px; } .holding-bar { grid-template-columns: minmax(210px, .9fr) minmax(150px, 1.2fr) 68px; } }
+    @media (max-width: 720px) { main { padding: 16px; } .stats { grid-template-columns: repeat(2, 1fr); } .stat { padding: 14px; } .stat strong { font-size: 24px; } .panel-head, .controls { padding: 16px; } .quarter-chart { padding: 16px; } .quarter-scale-note { padding: 12px 16px 0; } .holding-bar { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label label" "track value"; gap: 8px 10px; } .holding-bar .weight { min-width: 62px; } #row-count { margin-left: 0; } .chart-viewport { height: 430px; } }
     @media print { body { background: #fff; } main { padding: 0; } .downloads, .controls, #detail-panel, #chart-panel { display: none; } .table-scroll { overflow: visible; max-height: none; } table { min-width: 0; font-size: 9px; } th, th:first-child { position: static; } td { padding: 3px; } td .cell { min-width: 0; padding: 3px; } .panel { overflow: visible; } tr { break-inside: avoid; } }
   </style>
 </head>
@@ -132,7 +140,8 @@
         <div><h2 id="detail-heading">Selected reported quarter</h2><p class="subtle" id="selected-date"></p><p class="subtle" id="selected-filing"></p></div>
         <label for="quarter-select">Choose a fiscal quarter<select id="quarter-select"></select></label>
       </div>
-      <div class="quarter-detail" id="quarter-detail"></div>
+      <p class="subtle quarter-scale-note" id="bar-scale-note"></p>
+      <ol class="quarter-chart" id="quarter-detail" aria-describedby="bar-scale-note selected-date"></ol>
       <div class="quarter-note" id="quarter-note"></div>
     </section>
     <section class="panel" aria-labelledby="grid-heading">
@@ -225,21 +234,38 @@
     function selectQuarter(reported) {
       const item = snapshots.find(snapshot => snapshot.reported_as_of === reported);
       const active = holdingsView(item);
+      const viewName = operatingOnly ? "Operating companies only" : "As filed (SEC)";
+      const scaleMax = Math.max(...active.top10.map(row => Number(row.weight_pct)), 0);
       byId("quarter-select").value = reported;
       byId("selected-date").textContent = label(item) + " / Reported as of " + reported + " / Fiscal year end " + item.fiscal_year_end;
       const provenance = item.provenance;
       byId("selected-filing").textContent = provenance.form + " / Filed " + provenance.filing_date + " / Accepted " + provenance.accepted_at_utc + " / " + item.revision_count + " retained version(s)";
-      byId("quarter-detail").replaceChildren();
+      byId("bar-scale-note").textContent = "Bar lengths scale to " + pct(scaleMax) + ", the largest displayed holding in this selected quarter. Values remain SEC-reported percentages of net assets and are not normalized.";
+      const chart = byId("quarter-detail");
+      chart.setAttribute("aria-label", viewName + " top ten holdings for " + reported + ". Bar lengths are relative to the largest displayed holding; exact percentages are shown as text.");
+      chart.replaceChildren();
       for (const row of active.top10) {
-        const card = make("div", "holding-card");
-        card.append(make("div", "rank", "#" + row.rank + " / " + row.asset_category));
-        card.append(make("div", "security-title", row.title));
-        card.append(make("div", "weight", pct(row.weight_pct)));
-        card.append(make("div", "identifier", row.ticker.join("; ") || "Ticker not reported"));
-        if (row.title !== row.name) card.append(make("div", "identifier", "Issuer: " + row.name));
-        if (category(row)) card.append(make("div", "category", category(row)));
-        card.append(make("div", "identifier", identifiers(row)));
-        byId("quarter-detail").append(card);
+        const bar = make("li", "holding-bar");
+        if (row.security_lending.is_cash_collateral === true) bar.classList.add("collateral");
+        bar.dataset.rank = row.rank;
+        bar.dataset.weightPct = row.weight_pct;
+        const barLabel = make("div", "bar-label");
+        barLabel.append(make("div", "rank", "#" + row.rank + " / " + row.asset_category));
+        barLabel.append(make("div", "security-title", row.title));
+        const metadata = make("div", "bar-meta");
+        metadata.append(make("span", "", row.ticker.length ? "Ticker: " + row.ticker.join("; ") : "Ticker not reported"));
+        if (row.title !== row.name) metadata.append(make("span", "", "Issuer: " + row.name));
+        if (category(row)) metadata.append(make("span", "category", category(row)));
+        metadata.append(make("span", "", identifiers(row)));
+        barLabel.append(metadata);
+        const track = make("div", "bar-track");
+        track.setAttribute("aria-hidden", "true");
+        const fill = make("span", "bar-fill");
+        const relativeWidth = scaleMax > 0 ? Math.max(0, Math.min(100, Number(row.weight_pct) / scaleMax * 100)) : 0;
+        fill.style.width = relativeWidth.toFixed(4) + "%";
+        track.append(fill);
+        bar.append(barLabel, track, make("div", "weight", pct(row.weight_pct)));
+        chart.append(bar);
       }
       const notes = byId("quarter-note");
       notes.replaceChildren();

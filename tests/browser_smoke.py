@@ -119,6 +119,33 @@ def check_holdings_views(page, output, report):
         f"{app.decimal(row['weight_pct']):.2f}%" for row in expected_rows
     ]
     last = report["snapshots"][-1]
+    selected_rows = last["without_collateral"]["top10"]
+    chart_label = (
+        "Operating companies only top ten holdings for "
+        + last["reported_as_of"]
+        + ". Bar lengths are relative to the largest displayed holding; "
+        + "exact percentages are shown as text."
+    )
+    expect(page.locator("#quarter-detail")).to_have_attribute(
+        "aria-label",
+        chart_label,
+    )
+    expect(page.locator("#quarter-detail .holding-bar")).to_have_count(10)
+    assert page.locator("#quarter-detail .weight").all_text_contents() == [
+        f"{app.decimal(row['weight_pct']):.2f}%" for row in selected_rows
+    ]
+    ratios = page.locator("#quarter-detail .holding-bar").evaluate_all(
+        """bars => bars.map(bar => {
+            const track = bar.querySelector(".bar-track").getBoundingClientRect().width;
+            const fill = bar.querySelector(".bar-fill").getBoundingClientRect().width;
+            return fill / track;
+        })"""
+    )
+    maximum = max(app.decimal(row["weight_pct"]) for row in selected_rows)
+    for ratio, row in zip(ratios, selected_rows, strict=True):
+        expected = float(app.decimal(row["weight_pct"]) / maximum)
+        assert abs(ratio - expected) < 0.01
+    expect(page.locator("#bar-scale-note")).to_contain_text("not normalized")
     expect(page.locator("#last-total")).to_have_text(
         f"{app.decimal(last['without_collateral']['top10_weight_pct']):.2f}%"
     )
@@ -212,9 +239,13 @@ def smoke(page, origin, output, report):
     page.locator("#quarterly-body .quarter-button").first.focus()
     page.keyboard.press("Enter")
     expect(page.locator("#quarter-select")).to_have_value("2028-10-31")
+    selected = next(item for item in report["snapshots"] if item["reported_as_of"] == "2028-10-31")
+    expect(page.locator("#quarter-detail .security-title").first).to_have_text(
+        selected["top10"][0]["title"]
+    )
     page.locator("#quarter-select").select_option("2029-01-31")
     expect(page.locator("#selected-date")).to_contain_text("FY 2029 Q1")
-    expect(page.locator(".holding-card")).to_have_count(10)
+    expect(page.locator(".holding-bar")).to_have_count(10)
     expect(page.locator("#row-count")).to_contain_text("downloads always include all 20")
     for kind, count in [("wide", 20), ("long", 200), ("all", report["full_position_count"])]:
         check_download(page, output, report, kind, count)
@@ -236,7 +267,8 @@ def smoke(page, origin, output, report):
         page.set_viewport_size({"width": width, "height": 812})
         for mode in ("operating", "as-filed"):
             page.locator("#holdings-view").select_option(mode)
-            expect(page.locator(".holding-card")).to_have_count(10)
+            expect(page.locator(".holding-bar")).to_have_count(10)
+            expect(page.locator(".bar-fill")).to_have_count(10)
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
             assert page.locator(".table-scroll").evaluate("el => el.scrollWidth > el.clientWidth")
             expect(page.locator("#holdings-view")).to_be_visible()
