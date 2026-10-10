@@ -57,7 +57,9 @@ def index(item: sec.Filing) -> bytes:
     ).encode()
 
 
-def holdings(item: sec.Filing, *, allocation_delta="0") -> bytes:
+def holdings(
+    item: sec.Filing, *, allocation_delta="0", weight_overrides: dict[int, str] | None = None
+) -> bytes:
     root = Element("edgarSubmission", {"xmlns": sec.NAMESPACE, "synthetic-test-only": "true"})
 
     def node(parent, key, value):
@@ -92,6 +94,8 @@ def holdings(item: sec.Filing, *, allocation_delta="0") -> bytes:
         weights[0] += Decimal("0.25") + Decimal(allocation_delta)
         weights += [Decimal("0"), Decimal("-0.25")]
         for number, weight in enumerate(weights):
+            if weight_overrides and number in weight_overrides:
+                weight = Decimal(weight_overrides[number])
             row = SubElement(schedule, "invstOrSec")
             for key, value in {
                 "name": f"Synthetic Test Company {number:02d}",
@@ -154,21 +158,46 @@ def normalized(item=None, *, now=TEST_NOW, allocation_delta="0"):
 class Provider:
     """In-memory official-route-shaped fixtures. No network fallback."""
 
-    def __init__(self, end=TEST_END, *, count=23, warning_period=None, extra_month=False):
+    def __init__(
+        self,
+        end=TEST_END,
+        *,
+        count=23,
+        warning_period=None,
+        extra_month=False,
+        weight_overrides: dict[str, dict[int, str]] | None = None,
+    ):
         self.records = {}
         self.calls = []
+        weight_overrides = weight_overrides or {}
         last = sec.parse_date(end)
         for offset in range(1 - count, 1):
             period = sec.month_end(sec.month_shift(last, offset * 3)).isoformat()
-            self.add(period, allocation_delta="2" if period == warning_period else "0")
+            self.add(
+                period,
+                allocation_delta="2" if period == warning_period else "0",
+                weight_overrides=weight_overrides.get(period),
+            )
         if extra_month:
             self.add(sec.month_end(sec.month_shift(last, -1)).isoformat())
 
-    def add(self, period, *, amendment=0, filed=None, allocation_delta="0"):
+    def add(
+        self,
+        period,
+        *,
+        amendment=0,
+        filed=None,
+        allocation_delta="0",
+        weight_overrides: dict[int, str] | None = None,
+    ):
         item = filing(period, amendment=amendment, filed=filed)
         self.records[item.accession] = {
             "filing": item,
-            "xml": holdings(item, allocation_delta=allocation_delta),
+            "xml": holdings(
+                item,
+                allocation_delta=allocation_delta,
+                weight_overrides=weight_overrides,
+            ),
             "index": index(item),
         }
         return item

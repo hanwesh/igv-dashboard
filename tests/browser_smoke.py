@@ -89,10 +89,99 @@ def check_download(page, output, report, kind, expected_count):
     assert {row["data_kind"] for row in rows} == {app.SYNTHETIC}
 
 
+def chart_rows(snapshot, selected_snapshot, selected_rows, view):
+    active = snapshot["without_collateral"] if view == "operating" else snapshot
+    rows = []
+    for selected in selected_rows:
+        match = (
+            next(
+                (row for row in active["top10"] if row["cusip"] == selected["cusip"]),
+                None,
+            )
+            if selected["cusip"]
+            else selected
+            if snapshot is selected_snapshot
+            else None
+        )
+        rows.append((selected, match))
+    return sorted(
+        rows,
+        key=lambda pair: (
+            pair[1] is None,
+            pair[1]["rank"] if pair[1] else pair[0]["rank"],
+            pair[0]["rank"],
+            pair[0]["cusip"] or "",
+        ),
+    )
+
+
+def check_chart_order(page, comparison, selected_snapshot, selected_rows, view):
+    groups = page.locator("#quarter-detail > .quarter-group")
+    expect(groups).to_have_count(len(comparison))
+    expected_values, expected_missing = [], 0
+    maximum = app.decimal("0")
+    for index, snapshot in enumerate(comparison):
+        ordered = chart_rows(snapshot, selected_snapshot, selected_rows, view)
+        actual = (
+            groups.nth(index)
+            .locator(".quarter-bar-slot")
+            .evaluate_all(
+                """slots => slots.map(slot => ({
+                cusip: slot.dataset.cusip,
+                selectedRank: slot.dataset.selectedRank,
+                present: slot.dataset.present,
+                quarterRank: slot.dataset.quarterRank || null,
+                weightPct: slot.dataset.weightPct || null
+            }))"""
+            )
+        )
+        expected = [
+            {
+                "cusip": selected["cusip"] or "",
+                "selectedRank": str(selected["rank"]),
+                "present": "true" if match else "false",
+                "quarterRank": str(match["rank"]) if match else None,
+                "weightPct": match["weight_pct"] if match else None,
+            }
+            for selected, match in ordered
+        ]
+        assert actual == expected
+        present_weights = [
+            app.decimal(match["weight_pct"]) for _, match in ordered if match is not None
+        ]
+        assert present_weights == sorted(present_weights, reverse=True)
+        assert [match is not None for _, match in ordered] == sorted(
+            (match is not None for _, match in ordered), reverse=True
+        )
+        assert [selected["rank"] for selected, match in ordered if match is None] == sorted(
+            selected["rank"] for selected, match in ordered if match is None
+        )
+        for _, match in ordered:
+            if match:
+                maximum = max(maximum, app.decimal(match["weight_pct"]))
+                expected_values.append(f"{app.decimal(match['weight_pct']):.2f}%")
+            else:
+                expected_values.append("—")
+                expected_missing += 1
+    assert page.locator("#quarter-detail .quarter-bar-value").all_text_contents() == expected_values
+    expect(page.locator("#quarter-detail .bar-missing")).to_have_count(expected_missing)
+    expect(page.locator('#quarter-detail [data-present="false"]')).to_have_count(expected_missing)
+    return maximum, expected_missing
+
+
 def check_holdings_views(page, output, report):
     selector = page.get_by_role("combobox", name="Holdings view", exact=True)
     expect(selector).to_have_value("as-filed")
     original_titles = page.locator("#quarterly-body .symbol").all_text_contents()
+    visible_chart_labels = page.locator(
+        "#quarter-detail .security-label > :not(.sr-only)"
+    ).all_text_contents()
+    assert not any("Ticker" in text or "CUSIP:" in text for text in visible_chart_labels)
+    expect(page.locator("#quarter-detail .group-meta")).to_have_count(0)
+    accessible_label = page.locator("#quarter-detail .quarter-bar-slot").first.get_attribute(
+        "aria-label"
+    )
+    assert all(value in accessible_label for value in ("Ticker:", "CUSIP:", "ISIN:"))
     original_downloads = {
         kind: page.locator("#download-" + kind).get_attribute("href")
         for kind in report["downloads"]
@@ -125,9 +214,9 @@ def check_holdings_views(page, output, report):
         "Operating companies only grouped top-ten holdings comparison ending "
         + last["reported_as_of"]
         + ". 4 reported quarter groups run across the x-axis from oldest to selected. "
-        + "Each quarter group contains ten holding slots in the selected quarter's rank "
-        + "order, matched by CUSIP; exact percentages and missing top-ten appearances "
-        + "are shown as text."
+        + "Each quarter group contains the selected quarter's ten CUSIP-matched holdings. "
+        + "Present holdings are ordered by that quarter's exact active-view rank from highest "
+        + "percentage to lowest, followed by missing top-ten appearances."
     )
     expect(page.locator("#quarter-detail")).to_have_attribute(
         "aria-label",
@@ -149,41 +238,25 @@ def check_holdings_views(page, output, report):
     assert page.locator("#quarter-detail > .quarter-group").evaluate_all(
         "groups => groups.map(group => group.dataset.reported)"
     ) == [item["reported_as_of"] for item in comparison]
-    selected_cusips = [row["cusip"] for row in selected_rows]
-    for index in range(4):
-        assert (
-            page.locator("#quarter-detail > .quarter-group")
-            .nth(index)
-            .locator(".quarter-bar-slot")
-            .evaluate_all("slots => slots.map(slot => slot.dataset.cusip)")
-            == selected_cusips
-        )
     expect(page.locator("#quarter-detail .quarter-bar-slot")).to_have_count(40)
     expect(page.locator("#quarter-detail > .quarter-group.selected-quarter")).to_have_count(1)
     expect(page.locator("#quarter-detail .quarter-bar-slot.selected-quarter")).to_have_count(10)
-    expected_values, expected_missing = [], 0
-    maximum = app.decimal("0")
-    for snapshot in comparison:
-        for selected in selected_rows:
-            match = next(
-                (
-                    row
-                    for row in snapshot["without_collateral"]["top10"]
-                    if row["cusip"] == selected["cusip"]
-                ),
-                None,
-            )
-            if match:
-                maximum = max(maximum, app.decimal(match["weight_pct"]))
-                expected_values.append(f"{app.decimal(match['weight_pct']):.2f}%")
-            else:
-                expected_values.append("—")
-                expected_missing += 1
-    assert page.locator("#quarter-detail .quarter-bar-value").all_text_contents() == (
-        expected_values
+    maximum, expected_missing = check_chart_order(
+        page, comparison, last, selected_rows, "operating"
     )
-    expect(page.locator("#quarter-detail .bar-missing")).to_have_count(expected_missing)
-    expect(page.locator('#quarter-detail [data-present="false"]')).to_have_count(expected_missing)
+    assert expected_missing > 0
+    tied_snapshot = next(
+        snapshot for snapshot in comparison if snapshot["reported_as_of"] == "2031-01-31"
+    )
+    tied_rows = {row["cusip"]: row for row in tied_snapshot["without_collateral"]["top10"]}
+    assert tied_rows["TEST00002"]["weight_pct"] == tied_rows["TEST00003"]["weight_pct"]
+    tied_order = (
+        page.locator("#quarter-detail > .quarter-group")
+        .nth(comparison.index(tied_snapshot))
+        .locator(".quarter-bar-slot")
+        .evaluate_all("slots => slots.map(slot => slot.dataset.cusip)")
+    )
+    assert tied_order.index("TEST00002") < tied_order.index("TEST00003")
     expect(page.locator("#quarter-detail")).not_to_contain_text("0.00%")
     ratios = page.locator("#quarter-detail .quarter-bar-slot[data-present=true]").evaluate_all(
         """slots => slots.map(slot => {
@@ -213,7 +286,12 @@ def check_holdings_views(page, output, report):
         f"#{row['rank']} / {row['asset_category']}" for row in last["without_collateral"]["top10"]
     ]
     page.locator("#security-select").select_option("TEST00010")
-    expect(page.locator("#quarterly-body .match")).to_have_count(20)
+    expect(page.locator("#quarterly-body .match")).to_have_count(
+        sum(
+            any(row["cusip"] == "TEST00010" for row in item["without_collateral"]["top10"])
+            for item in report["snapshots"]
+        )
+    )
     page.locator("#quarter-select").select_option("2029-01-31")
     expect(page.locator("#selected-date")).to_contain_text("2029-01-31")
     expect(
@@ -221,6 +299,15 @@ def check_holdings_views(page, output, report):
     ).to_have_text("Synthetic Test Security 10")
     expect(page.locator("#quarter-legend li")).to_have_count(4)
     expect(page.locator("#quarter-legend li").last).to_contain_text("2029-01-31 (selected)")
+    selected = next(item for item in report["snapshots"] if item["reported_as_of"] == "2029-01-31")
+    selected_index = report["snapshots"].index(selected)
+    check_chart_order(
+        page,
+        report["snapshots"][selected_index - 3 : selected_index + 1],
+        selected,
+        selected["without_collateral"]["top10"],
+        "operating",
+    )
     for kind, original in original_downloads.items():
         assert page.locator("#download-" + kind).get_attribute("href") == original
     for kind, count in [("wide", 20), ("long", 200), ("all", report["full_position_count"])]:
@@ -233,6 +320,13 @@ def check_holdings_views(page, output, report):
     expect(page.locator("#security-select")).to_have_value("")
     expect(page.locator("#quarter-select")).to_have_value("2029-01-31")
     assert page.locator("#quarterly-body .symbol").all_text_contents() == original_titles
+    check_chart_order(
+        page,
+        report["snapshots"][selected_index - 3 : selected_index + 1],
+        selected,
+        selected["top10"],
+        "as-filed",
+    )
     early = report["snapshots"][2]
     page.locator("#quarter-select").select_option(early["reported_as_of"])
     expect(page.locator("#quarter-legend li")).to_have_count(3)
@@ -241,6 +335,10 @@ def check_holdings_views(page, output, report):
     )
     expect(page.locator("#quarter-detail > .quarter-group")).to_have_count(3)
     expect(page.locator("#quarter-detail .quarter-bar-slot")).to_have_count(30)
+    _, early_missing = check_chart_order(
+        page, report["snapshots"][:3], early, early["top10"], "as-filed"
+    )
+    assert early_missing > 0
     page.locator("#quarter-select").select_option(TEST_END)
 
 
@@ -262,8 +360,15 @@ def smoke(page, origin, output, report):
     expect(page.locator("#last-refresh")).to_have_text("2031-09-15T12:00:00Z")
     expect(page.locator("#selected-date")).to_contain_text("Fiscal year end 2031-10-31")
     expect(page.locator("#selected-filing")).to_contain_text("Filed 2031-09-14")
-    expect(page.locator("#quarter-detail")).to_contain_text("Ticker not reported")
-    expect(page.locator("#quarter-detail")).to_contain_text("ISIN: TEST00000001")
+    assert (
+        page.locator(
+            '#quarter-detail .quarter-bar-slot[aria-label*="Ticker: not reported"]'
+        ).count()
+        > 0
+    )
+    expect(
+        page.locator('#quarter-detail .quarter-bar-slot[aria-label*="ISIN: TEST00000001"]')
+    ).to_have_count(4)
     expect(page.locator("#quarter-note")).to_contain_text("Original XML SHA256")
     expect(page.locator("#quarter-note")).to_contain_text("Normalized immutable object SHA256")
     expect(page.locator("#source-notes")).to_contain_text("without normalization")
@@ -279,7 +384,7 @@ def smoke(page, origin, output, report):
     assert page.locator("#download-performance").count() == 0
     check_holdings_views(page, output, report)
     assert widgets == [], "Changing holdings view must not request the independent chart"
-    expect(page.locator("#security-select option")).to_have_count(11)
+    expect(page.locator("#security-select option")).to_have_count(len(report["securities"]) + 1)
     group = next(group for group in report["securities"] if group["cusip"] == "TEST00001")
     expect(page.locator('#security-select option[value="TEST00001"]')).to_have_text(
         f"{group['label']} / TEST00001 (20/20 quarters)"
@@ -381,7 +486,22 @@ def main():
     with tempfile.TemporaryDirectory(prefix="igv-synthetic-smoke-") as temporary:
         root = Path(temporary)
         data, output = root / "data", root / "igv-dashboard"
-        provider = Provider(warning_period=TEST_END, extra_month=True)
+        provider = Provider(
+            warning_period=TEST_END,
+            extra_month=True,
+            weight_overrides={
+                "2026-10-31": {
+                    2: "8.250000000000",
+                    3: "8.250000000000",
+                    11: "8.750000000000",
+                },
+                "2031-01-31": {
+                    2: "8.250000000000",
+                    3: "8.250000000000",
+                    11: "8.750000000000",
+                },
+            },
+        )
         for record in provider.records.values():
             if record["filing"].reported_date_hint < "2030-01-01":
                 record["xml"] = record["xml"].replace(
@@ -439,10 +559,12 @@ def main():
             thread.join(timeout=5)
     print(
         "PASS: synthetic Chromium smoke - 20 fiscal quarters / 200 positions, historical "
-        "identifiers, keyboard-operated collateral views, quarterly controls/search, "
-        "three exact CSVs, subpath, desktop/390px/375px mobile, no-JS "
-        "table/downloads, filing-lag rollover and mocked hosted-chart success/error/timeout. "
-        "No financial network requests; temporary site/browser profiles removed."
+        "identifiers, descending quarter bars with deterministic ties and trailing gaps, "
+        "decluttered visual labels with accessible identifiers, keyboard-operated collateral "
+        "views, quarterly controls/search, three exact CSVs, subpath, desktop/390px/375px "
+        "mobile, no-JS table/downloads, filing-lag rollover and mocked hosted-chart "
+        "success/error/timeout. No financial network requests; temporary site/browser "
+        "profiles removed."
     )
 
 

@@ -232,7 +232,15 @@ def test_built_page_defaults_to_as_filed_without_javascript(archive, tmp_path):
     assert 'id="quarter-chart-scroll" tabindex="0" role="region"' in page
     assert 'id="bar-scale-note"' in page
     assert "Quarter groups run left to right." in page
+    assert "present holdings run from highest to lowest exact percentage" in page
+    assert '"Not in top 10" gaps come last' in page
+    assert "const orderedRowsFor = entry => selectedRows" in page
+    assert "return left.match.rank - right.match.rank || left.row.rank - right.row.rank;" in page
+    assert "followed by missing selected-universe slots" in page
     assert ".quarter-group {" in page
+    assert ".group-meta {" not in page
+    assert 'const metadata = make("div", "group-meta");' not in page
+    assert "accessibleIdentifiers(identity)" in page
     assert ".security-group {" not in page
     assert "holding-card" not in page
     assert "holding-bar" not in page
