@@ -124,9 +124,10 @@ def check_holdings_views(page, output, report):
     chart_label = (
         "Operating companies only grouped top-ten holdings comparison ending "
         + last["reported_as_of"]
-        + ". Ten security groups follow the selected quarter's rank order. "
-        + "Each group compares up to four reported quarters; exact percentages "
-        + "and missing top-ten appearances are shown as text."
+        + ". 4 reported quarter groups run across the x-axis from oldest to selected. "
+        + "Each quarter group contains ten holding slots in the selected quarter's rank "
+        + "order, matched by CUSIP; exact percentages and missing top-ten appearances "
+        + "are shown as text."
     )
     expect(page.locator("#quarter-detail")).to_have_attribute(
         "aria-label",
@@ -144,13 +145,26 @@ def check_holdings_views(page, output, report):
     )
     assert len(set(colors)) == 4
     expect(page.locator("#quarter-legend .selected-quarter")).to_have_count(1)
-    expect(page.locator("#quarter-detail .security-group")).to_have_count(10)
+    expect(page.locator("#quarter-detail > .quarter-group")).to_have_count(4)
+    assert page.locator("#quarter-detail > .quarter-group").evaluate_all(
+        "groups => groups.map(group => group.dataset.reported)"
+    ) == [item["reported_as_of"] for item in comparison]
+    selected_cusips = [row["cusip"] for row in selected_rows]
+    for index in range(4):
+        assert (
+            page.locator("#quarter-detail > .quarter-group")
+            .nth(index)
+            .locator(".quarter-bar-slot")
+            .evaluate_all("slots => slots.map(slot => slot.dataset.cusip)")
+            == selected_cusips
+        )
     expect(page.locator("#quarter-detail .quarter-bar-slot")).to_have_count(40)
+    expect(page.locator("#quarter-detail > .quarter-group.selected-quarter")).to_have_count(1)
     expect(page.locator("#quarter-detail .quarter-bar-slot.selected-quarter")).to_have_count(10)
     expected_values, expected_missing = [], 0
     maximum = app.decimal("0")
-    for selected in selected_rows:
-        for snapshot in comparison:
+    for snapshot in comparison:
+        for selected in selected_rows:
             match = next(
                 (
                     row
@@ -193,16 +207,18 @@ def check_holdings_views(page, output, report):
     )
     expect(page.locator("#quarter-note")).to_contain_text(collateral)
     expect(page.locator("#source-notes")).to_contain_text(collateral)
-    assert page.locator("#quarter-detail .rank").all_text_contents() == [
+    assert page.locator(
+        "#quarter-detail > .quarter-group.selected-quarter .rank"
+    ).all_text_contents() == [
         f"#{row['rank']} / {row['asset_category']}" for row in last["without_collateral"]["top10"]
     ]
     page.locator("#security-select").select_option("TEST00010")
     expect(page.locator("#quarterly-body .match")).to_have_count(20)
     page.locator("#quarter-select").select_option("2029-01-31")
     expect(page.locator("#selected-date")).to_contain_text("2029-01-31")
-    expect(page.locator("#quarter-detail .security-title").last).to_have_text(
-        "Synthetic Test Security 10"
-    )
+    expect(
+        page.locator("#quarter-detail > .quarter-group.selected-quarter .security-title").last
+    ).to_have_text("Synthetic Test Security 10")
     expect(page.locator("#quarter-legend li")).to_have_count(4)
     expect(page.locator("#quarter-legend li").last).to_contain_text("2029-01-31 (selected)")
     for kind, original in original_downloads.items():
@@ -223,6 +239,7 @@ def check_holdings_views(page, output, report):
     expect(page.locator("#quarter-legend li").last).to_contain_text(
         early["reported_as_of"] + " (selected)"
     )
+    expect(page.locator("#quarter-detail > .quarter-group")).to_have_count(3)
     expect(page.locator("#quarter-detail .quarter-bar-slot")).to_have_count(30)
     page.locator("#quarter-select").select_option(TEST_END)
 
@@ -253,9 +270,9 @@ def smoke(page, origin, output, report):
     expect(page.locator("#source-notes")).to_contain_text("no reported ticker")
     expect(page.locator("#collateral-note")).to_contain_text("securities-lending collateral")
     expect(page.locator("#quarter-note")).to_contain_text("All reported investments:")
-    expect(page.locator("#quarter-detail .category")).to_contain_text(
-        "Securities-lending collateral"
-    )
+    expect(
+        page.locator("#quarter-detail > .quarter-group.selected-quarter .category")
+    ).to_contain_text("Securities-lending collateral")
     expect(page.locator("#publication-lag")).to_contain_text("60 days")
     expect(page.locator("#chart-viewport")).to_be_hidden()
     assert widgets == []
@@ -286,13 +303,13 @@ def smoke(page, origin, output, report):
     page.keyboard.press("Enter")
     expect(page.locator("#quarter-select")).to_have_value("2028-10-31")
     selected = next(item for item in report["snapshots"] if item["reported_as_of"] == "2028-10-31")
-    expect(page.locator("#quarter-detail .security-title").first).to_have_text(
-        selected["top10"][0]["title"]
-    )
+    expect(
+        page.locator("#quarter-detail > .quarter-group.selected-quarter .security-title").first
+    ).to_have_text(selected["top10"][0]["title"])
     expect(page.locator("#quarter-legend li").last).to_contain_text("2028-10-31 (selected)")
     page.locator("#quarter-select").select_option("2029-01-31")
     expect(page.locator("#selected-date")).to_contain_text("FY 2029 Q1")
-    expect(page.locator(".security-group")).to_have_count(10)
+    expect(page.locator("#quarter-detail > .quarter-group")).to_have_count(4)
     expect(page.locator("#row-count")).to_contain_text("downloads always include all 20")
     for kind, count in [("wide", 20), ("long", 200), ("all", report["full_position_count"])]:
         check_download(page, output, report, kind, count)
@@ -314,7 +331,7 @@ def smoke(page, origin, output, report):
         page.set_viewport_size({"width": width, "height": 812})
         for mode in ("operating", "as-filed"):
             page.locator("#holdings-view").select_option(mode)
-            expect(page.locator(".security-group")).to_have_count(10)
+            expect(page.locator("#quarter-detail > .quarter-group")).to_have_count(4)
             expect(page.locator("#quarter-legend li")).to_have_count(4)
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
             assert page.locator("#quarter-chart-scroll").evaluate(

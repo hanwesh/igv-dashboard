@@ -42,20 +42,24 @@
     .quarter-series-3 { --quarter-color: #7b4f91; }
     .grouped-chart-scroll { max-width: 100%; overflow-x: auto; padding: 14px 20px 8px; scrollbar-gutter: stable; }
     .grouped-chart-scroll:focus-visible { outline: 3px solid #087e8b; outline-offset: -3px; }
-    .grouped-chart { min-width: 1240px; display: grid; grid-template-columns: repeat(10, minmax(108px, 1fr)); gap: 14px; align-items: end; }
-    .security-group { min-width: 0; display: grid; grid-template-rows: 326px auto; gap: 10px; }
-    .bar-cluster { min-width: 0; display: grid; grid-template-columns: repeat(var(--series-count), minmax(24px, 1fr)); gap: 4px; align-items: end; }
-    .quarter-bar-slot { min-width: 0; height: 326px; display: grid; grid-template-rows: 54px 272px; align-items: end; }
+    .grouped-chart { min-width: calc(var(--quarter-count) * 720px); display: grid; grid-template-columns: repeat(var(--quarter-count), minmax(700px, 1fr)); gap: 18px; align-items: start; }
+    .quarter-group { min-width: 0; display: grid; grid-template-rows: auto auto; gap: 12px; padding: 12px; border: 1px solid #d2dde1; border-radius: 10px; background: #fbfcfd; }
+    .quarter-group.selected-quarter { outline: 2px solid #192d3a; outline-offset: -2px; }
+    .bar-cluster { min-width: 0; display: grid; grid-template-columns: repeat(10, minmax(56px, 1fr)); gap: 6px; align-items: start; }
+    .quarter-bar-slot { min-width: 0; display: grid; grid-template-rows: 54px 272px auto; align-items: start; }
     .quarter-bar-value { min-width: 0; align-self: end; justify-self: center; font-size: 9px; font-weight: 750; font-variant-numeric: tabular-nums; line-height: 1; writing-mode: vertical-rl; transform: rotate(180deg); }
     .quarter-bar-plot { height: 272px; display: flex; align-items: flex-end; justify-content: center; border-bottom: 1px solid #9fb0b7; }
-    .vertical-bar { display: block; width: min(24px, 78%); min-height: 2px; height: var(--bar-height); border-radius: 5px 5px 0 0; background: var(--quarter-color); }
+    .vertical-bar { display: block; width: min(34px, 76%); min-height: 2px; height: var(--bar-height); border-radius: 5px 5px 0 0; background: var(--quarter-color); }
     .quarter-bar-slot.selected-quarter .vertical-bar { outline: 2px solid #192d3a; outline-offset: 1px; }
     .bar-missing { align-self: center; font-size: 9px; color: #667b85; line-height: 1.1; writing-mode: vertical-rl; transform: rotate(180deg); border-left: 1px dashed #9fb0b7; padding-left: 4px; }
-    .security-label { position: relative; min-width: 0; text-align: center; overflow-wrap: anywhere; }
+    .security-label { position: relative; min-width: 0; min-height: 142px; padding-top: 7px; text-align: center; overflow-wrap: anywhere; }
     .security-label .rank { font-size: 11px; font-weight: 700; color: #637984; }
-    .security-label .security-title { font-size: 13px; font-weight: 750; margin-top: 4px; }
+    .security-label .security-title { font-size: 11px; font-weight: 750; line-height: 1.25; margin-top: 4px; }
     .group-meta { display: grid; gap: 2px; margin-top: 5px; color: #536672; font-size: 10px; line-height: 1.35; }
     .group-meta .category { margin-top: 0; }
+    .quarter-label { min-width: 0; text-align: center; border-top: 1px solid #d2dde1; padding-top: 10px; }
+    .quarter-title { font-size: 14px; font-weight: 800; }
+    .quarter-meta { color: #536672; font-size: 11px; margin-top: 3px; }
     .chart-scroll-hint { padding: 0 20px 10px; margin: 0; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
     .quarter-note { padding: 0 20px 20px; font-size: 13px; color: #536672; overflow-wrap: anywhere; }
@@ -160,7 +164,7 @@
         <div class="grouped-chart-scroll" id="quarter-chart-scroll" tabindex="0" role="region" aria-label="Scrollable grouped vertical holdings chart" aria-describedby="bar-scale-note chart-scroll-hint">
           <div class="grouped-chart" id="quarter-detail" role="group" aria-describedby="bar-scale-note selected-date"></div>
         </div>
-        <p class="subtle chart-scroll-hint" id="chart-scroll-hint">Security groups follow the selected quarter's rank order. Scroll the chart horizontally on smaller screens.</p>
+        <p class="subtle chart-scroll-hint" id="chart-scroll-hint">Quarter groups run left to right. Bars within each quarter follow the selected quarter's CUSIP-keyed rank order. Scroll the chart horizontally on smaller screens.</p>
       </figure>
       <div class="quarter-note" id="quarter-note"></div>
     </section>
@@ -264,12 +268,13 @@
         selected: snapshot === item
       }));
       const selectedRows = active.top10;
+      const matchFor = (row, entry) => row.cusip
+        ? entry.active.top10.find(candidate => candidate.cusip === row.cusip)
+        : entry.snapshot === item ? row : null;
       const values = [];
       for (const row of selectedRows) {
         for (const entry of series) {
-          const match = row.cusip
-            ? entry.active.top10.find(candidate => candidate.cusip === row.cusip)
-            : entry.snapshot === item ? row : null;
+          const match = matchFor(row, entry);
           if (match) values.push(Number(match.weight_pct));
         }
       }
@@ -289,26 +294,26 @@
         legend.append(legendItem);
       }
       const chart = byId("quarter-detail");
-      chart.style.setProperty("--series-count", series.length);
-      chart.setAttribute("aria-label", viewName + " grouped top-ten holdings comparison ending " + reported + ". Ten security groups follow the selected quarter's rank order. Each group compares up to four reported quarters; exact percentages and missing top-ten appearances are shown as text.");
+      chart.style.setProperty("--quarter-count", series.length);
+      chart.setAttribute("aria-label", viewName + " grouped top-ten holdings comparison ending " + reported + ". " + comparison.length + " reported quarter groups run across the x-axis from oldest to selected. Each quarter group contains ten holding slots in the selected quarter's rank order, matched by CUSIP; exact percentages and missing top-ten appearances are shown as text.");
       chart.replaceChildren();
-      for (const row of selectedRows) {
-        const group = make("div", "security-group");
-        group.dataset.cusip = row.cusip || "";
-        group.dataset.rank = row.rank;
+      for (const entry of series) {
+        const group = make("section", "quarter-group quarter-series-" + entry.index + (entry.selected ? " selected-quarter" : ""));
+        group.dataset.reported = entry.snapshot.reported_as_of;
         group.setAttribute("role", "group");
-        group.setAttribute("aria-label", "#" + row.rank + " " + row.title + ". " + identifiers(row) + ".");
+        group.setAttribute("aria-label", label(entry.snapshot) + " / " + entry.snapshot.reported_as_of + (entry.selected ? " / selected quarter" : "") + ". Ten holding slots follow the selected quarter's rank order and use CUSIP continuity.");
         const cluster = make("div", "bar-cluster");
-        cluster.style.setProperty("--series-count", series.length);
-        for (const entry of series) {
-          const match = row.cusip
-            ? entry.active.top10.find(candidate => candidate.cusip === row.cusip)
-            : entry.snapshot === item ? row : null;
+        for (const row of selectedRows) {
+          const match = matchFor(row, entry);
+          const identity = match || row;
           const slot = make("div", "quarter-bar-slot quarter-series-" + entry.index + (entry.selected ? " selected-quarter" : ""));
           slot.dataset.reported = entry.snapshot.reported_as_of;
+          slot.dataset.cusip = row.cusip || "";
+          slot.dataset.selectedRank = row.rank;
           slot.dataset.present = match ? "true" : "false";
+          if (match) slot.dataset.quarterRank = match.rank;
           slot.setAttribute("role", "img");
-          slot.setAttribute("aria-label", (match ? match.title : row.title) + " / " + label(entry.snapshot) + " / " + entry.snapshot.reported_as_of + ": " + (match ? pct(match.weight_pct) + " of net assets" : "Not in top 10") + (entry.selected ? " / selected quarter" : ""));
+          slot.setAttribute("aria-label", "Selected-quarter slot #" + row.rank + ", " + identity.title + ". " + identifiers(identity) + ". " + label(entry.snapshot) + " / " + entry.snapshot.reported_as_of + ": " + (match ? pct(match.weight_pct) + " of net assets / active-view rank #" + match.rank : "Not in top 10") + (entry.selected ? " / selected quarter" : ""));
           if (match) {
             slot.dataset.weightPct = match.weight_pct;
             slot.append(make("span", "quarter-bar-value", pct(match.weight_pct)));
@@ -325,17 +330,24 @@
             plot.append(make("span", "bar-missing", "Not in top 10"));
             slot.append(plot);
           }
+          const securityLabel = make("div", "security-label");
+          const rankText = match
+            ? "#" + match.rank + " / " + match.asset_category + (!entry.selected && match.rank !== row.rank ? " / selected slot #" + row.rank : "")
+            : "Selected slot #" + row.rank;
+          securityLabel.append(make("div", "rank", rankText));
+          securityLabel.append(make("div", "security-title", identity.title));
+          const metadata = make("div", "group-meta");
+          metadata.append(make("span", "", identity.ticker.length ? "Ticker: " + identity.ticker.join("; ") : "Ticker not reported"));
+          metadata.append(make("span", "", "CUSIP: " + (identity.cusip || "not reported")));
+          if (match && category(match)) metadata.append(make("span", "category", category(match)));
+          securityLabel.append(metadata);
+          securityLabel.append(make("span", "sr-only", (identity.title !== identity.name ? "Issuer: " + identity.name + ". " : "") + "ISIN: " + (identity.isin.join("; ") || "not reported") + "."));
+          slot.append(securityLabel);
           cluster.append(slot);
         }
-        const groupLabel = make("div", "security-label");
-        groupLabel.append(make("div", "rank", "#" + row.rank + " / " + row.asset_category));
-        groupLabel.append(make("div", "security-title", row.title));
-        const metadata = make("div", "group-meta");
-        metadata.append(make("span", "", row.ticker.length ? "Ticker: " + row.ticker.join("; ") : "Ticker not reported"));
-        metadata.append(make("span", "", "CUSIP: " + (row.cusip || "not reported")));
-        if (category(row)) metadata.append(make("span", "category", category(row)));
-        groupLabel.append(metadata);
-        groupLabel.append(make("span", "sr-only", (row.title !== row.name ? "Issuer: " + row.name + ". " : "") + "ISIN: " + (row.isin.join("; ") || "not reported") + "."));
+        const groupLabel = make("div", "quarter-label");
+        groupLabel.append(make("div", "quarter-title", label(entry.snapshot) + " / " + entry.snapshot.reported_as_of + (entry.selected ? " (selected)" : "")));
+        groupLabel.append(make("div", "quarter-meta", "Ten CUSIP-matched slots in selected-quarter rank order"));
         group.append(cluster, groupLabel);
         chart.append(group);
       }

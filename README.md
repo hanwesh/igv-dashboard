@@ -108,12 +108,16 @@ omitted weight is **not redistributed or normalized to 100%**. The collateral
 note remains visible with the same exact percentage, described as included or
 excluded as appropriate. The selected-quarter grouped vertical chart, table,
 concentration totals, CUSIP filters and appearance counts all follow the
-selected view. The chart groups the selected quarter's ten CUSIP-keyed
-securities and compares that quarter with up to three preceding reports, using
-one labelled color per quarter. Heights are relative to the largest present
-weight in the comparison; visible labels retain exact source weights. A
-labelled gap means the security was outside that quarter's top ten, never zero.
-The independently hosted chart does not change.
+selected view. The chart places the selected report and up to three preceding
+reports as the outer x-axis groups, using one labelled color per quarter and a
+non-color outline/text marker for the selected quarter. Each quarter group
+nests ten product bars in the selected quarter's CUSIP-keyed rank order, so the
+same security stays in the same within-group slot across reports. Present bars
+use that quarter's reported title, active-view rank and exact source weight; a
+labelled gap means the selected-quarter security was outside that report's top
+ten, never zero. Heights are relative to the largest present weight in the
+comparison and are never renormalized. The independently hosted chart does not
+change.
 
 None of the IGV seed filings supply exchange tickers. This is a property of
 the source, not a per-position data-quality failure. Security titles and issuer
