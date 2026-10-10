@@ -231,6 +231,9 @@ def test_built_page_defaults_to_as_filed_without_javascript(archive, tmp_path):
     assert '<div class="grouped-chart" id="quarter-detail"' in page
     assert 'id="quarter-chart-scroll" tabindex="0" role="region"' in page
     assert 'id="bar-scale-note"' in page
+    assert "Quarter groups run left to right." in page
+    assert ".quarter-group {" in page
+    assert ".security-group {" not in page
     assert "holding-card" not in page
     assert "holding-bar" not in page
     assert page.count('id="view-table-caption">As filed (SEC).') == 1
