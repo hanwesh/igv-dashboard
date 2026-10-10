@@ -120,32 +120,69 @@ def check_holdings_views(page, output, report):
     ]
     last = report["snapshots"][-1]
     selected_rows = last["without_collateral"]["top10"]
+    comparison = report["snapshots"][-4:]
     chart_label = (
-        "Operating companies only top ten holdings for "
+        "Operating companies only grouped top-ten holdings comparison ending "
         + last["reported_as_of"]
-        + ". Bar lengths are relative to the largest displayed holding; "
-        + "exact percentages are shown as text."
+        + ". Ten security groups follow the selected quarter's rank order. "
+        + "Each group compares up to four reported quarters; exact percentages "
+        + "and missing top-ten appearances are shown as text."
     )
     expect(page.locator("#quarter-detail")).to_have_attribute(
         "aria-label",
         chart_label,
     )
-    expect(page.locator("#quarter-detail .holding-bar")).to_have_count(10)
-    assert page.locator("#quarter-detail .weight").all_text_contents() == [
-        f"{app.decimal(row['weight_pct']):.2f}%" for row in selected_rows
+    expect(page.locator("#quarter-legend li")).to_have_count(4)
+    assert page.locator("#quarter-legend li").all_text_contents() == [
+        f"FY {item['fiscal_year_end'][:4]} Q{item['fiscal_quarter']} / "
+        + item["reported_as_of"]
+        + (" (selected)" if item is last else "")
+        for item in comparison
     ]
-    ratios = page.locator("#quarter-detail .holding-bar").evaluate_all(
-        """bars => bars.map(bar => {
-            const track = bar.querySelector(".bar-track").getBoundingClientRect().width;
-            const fill = bar.querySelector(".bar-fill").getBoundingClientRect().width;
-            return fill / track;
+    colors = page.locator("#quarter-legend .series-swatch").evaluate_all(
+        "swatches => swatches.map(swatch => getComputedStyle(swatch).backgroundColor)"
+    )
+    assert len(set(colors)) == 4
+    expect(page.locator("#quarter-legend .selected-quarter")).to_have_count(1)
+    expect(page.locator("#quarter-detail .security-group")).to_have_count(10)
+    expect(page.locator("#quarter-detail .quarter-bar-slot")).to_have_count(40)
+    expect(page.locator("#quarter-detail .quarter-bar-slot.selected-quarter")).to_have_count(10)
+    expected_values, expected_missing = [], 0
+    maximum = app.decimal("0")
+    for selected in selected_rows:
+        for snapshot in comparison:
+            match = next(
+                (
+                    row
+                    for row in snapshot["without_collateral"]["top10"]
+                    if row["cusip"] == selected["cusip"]
+                ),
+                None,
+            )
+            if match:
+                maximum = max(maximum, app.decimal(match["weight_pct"]))
+                expected_values.append(f"{app.decimal(match['weight_pct']):.2f}%")
+            else:
+                expected_values.append("—")
+                expected_missing += 1
+    assert page.locator("#quarter-detail .quarter-bar-value").all_text_contents() == (
+        expected_values
+    )
+    expect(page.locator("#quarter-detail .bar-missing")).to_have_count(expected_missing)
+    expect(page.locator('#quarter-detail [data-present="false"]')).to_have_count(expected_missing)
+    expect(page.locator("#quarter-detail")).not_to_contain_text("0.00%")
+    ratios = page.locator("#quarter-detail .quarter-bar-slot[data-present=true]").evaluate_all(
+        """slots => slots.map(slot => {
+            const plot = slot.querySelector(".quarter-bar-plot").getBoundingClientRect().height;
+            const bar = slot.querySelector(".vertical-bar").getBoundingClientRect().height;
+            return {ratio: bar / plot, weight: slot.dataset.weightPct};
         })"""
     )
-    maximum = max(app.decimal(row["weight_pct"]) for row in selected_rows)
-    for ratio, row in zip(ratios, selected_rows, strict=True):
-        expected = float(app.decimal(row["weight_pct"]) / maximum)
-        assert abs(ratio - expected) < 0.01
+    for actual in ratios:
+        expected = float(app.decimal(actual["weight"]) / maximum)
+        assert abs(actual["ratio"] - expected) < 0.01
     expect(page.locator("#bar-scale-note")).to_contain_text("not normalized")
+    expect(page.locator("#bar-scale-note")).to_contain_text("not zero")
     expect(page.locator("#last-total")).to_have_text(
         f"{app.decimal(last['without_collateral']['top10_weight_pct']):.2f}%"
     )
@@ -166,6 +203,8 @@ def check_holdings_views(page, output, report):
     expect(page.locator("#quarter-detail .security-title").last).to_have_text(
         "Synthetic Test Security 10"
     )
+    expect(page.locator("#quarter-legend li")).to_have_count(4)
+    expect(page.locator("#quarter-legend li").last).to_contain_text("2029-01-31 (selected)")
     for kind, original in original_downloads.items():
         assert page.locator("#download-" + kind).get_attribute("href") == original
     for kind, count in [("wide", 20), ("long", 200), ("all", report["full_position_count"])]:
@@ -178,6 +217,13 @@ def check_holdings_views(page, output, report):
     expect(page.locator("#security-select")).to_have_value("")
     expect(page.locator("#quarter-select")).to_have_value("2029-01-31")
     assert page.locator("#quarterly-body .symbol").all_text_contents() == original_titles
+    early = report["snapshots"][2]
+    page.locator("#quarter-select").select_option(early["reported_as_of"])
+    expect(page.locator("#quarter-legend li")).to_have_count(3)
+    expect(page.locator("#quarter-legend li").last).to_contain_text(
+        early["reported_as_of"] + " (selected)"
+    )
+    expect(page.locator("#quarter-detail .quarter-bar-slot")).to_have_count(30)
     page.locator("#quarter-select").select_option(TEST_END)
 
 
@@ -243,9 +289,10 @@ def smoke(page, origin, output, report):
     expect(page.locator("#quarter-detail .security-title").first).to_have_text(
         selected["top10"][0]["title"]
     )
+    expect(page.locator("#quarter-legend li").last).to_contain_text("2028-10-31 (selected)")
     page.locator("#quarter-select").select_option("2029-01-31")
     expect(page.locator("#selected-date")).to_contain_text("FY 2029 Q1")
-    expect(page.locator(".holding-bar")).to_have_count(10)
+    expect(page.locator(".security-group")).to_have_count(10)
     expect(page.locator("#row-count")).to_contain_text("downloads always include all 20")
     for kind, count in [("wide", 20), ("long", 200), ("all", report["full_position_count"])]:
         check_download(page, output, report, kind, count)
@@ -267,9 +314,12 @@ def smoke(page, origin, output, report):
         page.set_viewport_size({"width": width, "height": 812})
         for mode in ("operating", "as-filed"):
             page.locator("#holdings-view").select_option(mode)
-            expect(page.locator(".holding-bar")).to_have_count(10)
-            expect(page.locator(".bar-fill")).to_have_count(10)
+            expect(page.locator(".security-group")).to_have_count(10)
+            expect(page.locator("#quarter-legend li")).to_have_count(4)
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+            assert page.locator("#quarter-chart-scroll").evaluate(
+                "el => el.scrollWidth > el.clientWidth"
+            )
             assert page.locator(".table-scroll").evaluate("el => el.scrollWidth > el.clientWidth")
             expect(page.locator("#holdings-view")).to_be_visible()
     assert widgets == [WIDGET_URL], "Holdings view changes must not reload the hosted chart"
