@@ -110,14 +110,19 @@ excluded as appropriate. The selected-quarter grouped vertical chart, table,
 concentration totals, CUSIP filters and appearance counts all follow the
 selected view. The chart places the selected report and up to three preceding
 reports as the outer x-axis groups, using one labelled color per quarter and a
-non-color outline/text marker for the selected quarter. Each quarter group
-nests ten product bars in the selected quarter's CUSIP-keyed rank order, so the
-same security stays in the same within-group slot across reports. Present bars
-use that quarter's reported title, active-view rank and exact source weight; a
-labelled gap means the selected-quarter security was outside that report's top
-ten, never zero. Heights are relative to the largest present weight in the
-comparison and are never renormalized. The independently hosted chart does not
-change.
+non-color outline/text marker for the selected quarter. The comparison universe
+remains the selected quarter's ten CUSIP-keyed securities, but each quarter
+orders its present members from highest to lowest exact active-view rank, then
+places labelled `Not in top 10` gaps last in selected-quarter rank order. Exact
+weight ties therefore follow the ranking's reported-USD-value and source-row
+tiebreakers, while missing slots remain deterministic. Present bars use that
+quarter's reported title, active-view rank and exact source weight; a gap means
+the selected-quarter security was outside that report's top ten, never zero.
+Visible chart labels keep percentage, rank, title and meaningful category text
+without repeating ticker/CUSIP lines; ticker, CUSIP and ISIN remain in chart
+accessibility text, the table, filters and downloads. Heights are relative to
+the largest present weight in the comparison and are never renormalized. The
+independently hosted chart does not change.
 
 None of the IGV seed filings supply exchange tickers. This is a property of
 the source, not a per-position data-quality failure. Security titles and issuer
@@ -264,9 +269,11 @@ financial requests. Chromium serves a temporary synthetic site on loopback
 under `/igv-dashboard/`, intercepts the widget with a mock, blocks all other
 external requests, and removes the site/profile afterward. It checks exact
 20/200 shapes in both views, exact collateral exclusion and replacement ranks,
-CUSIP/name-variant continuity, keyboard controls, source notes, unchanged
-as-filed exports, full-portfolio reconstruction, desktop/mobile including
-390px, no-JS behavior, stale rollover and widget success/error/timeout.
+CUSIP/name-variant continuity, per-quarter descending/tie/missing-last chart
+ordering, visually decluttered chart labels with identifiers retained for
+accessibility, keyboard controls, source notes, unchanged as-filed exports,
+full-portfolio reconstruction, desktop/mobile including 390px, no-JS behavior,
+stale rollover and widget success/error/timeout.
 Real TradingView availability is independently verified, not inferred from this
 mock. Synthetic sites stay outside the repository and are never uploaded.
 

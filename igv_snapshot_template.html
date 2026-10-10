@@ -55,8 +55,7 @@
     .security-label { position: relative; min-width: 0; min-height: 142px; padding-top: 7px; text-align: center; overflow-wrap: anywhere; }
     .security-label .rank { font-size: 11px; font-weight: 700; color: #637984; }
     .security-label .security-title { font-size: 11px; font-weight: 750; line-height: 1.25; margin-top: 4px; }
-    .group-meta { display: grid; gap: 2px; margin-top: 5px; color: #536672; font-size: 10px; line-height: 1.35; }
-    .group-meta .category { margin-top: 0; }
+    .security-label > .category { margin-top: 5px; line-height: 1.35; }
     .quarter-label { min-width: 0; text-align: center; border-top: 1px solid #d2dde1; padding-top: 10px; }
     .quarter-title { font-size: 14px; font-weight: 800; }
     .quarter-meta { color: #536672; font-size: 11px; margin-top: 3px; }
@@ -164,7 +163,7 @@
         <div class="grouped-chart-scroll" id="quarter-chart-scroll" tabindex="0" role="region" aria-label="Scrollable grouped vertical holdings chart" aria-describedby="bar-scale-note chart-scroll-hint">
           <div class="grouped-chart" id="quarter-detail" role="group" aria-describedby="bar-scale-note selected-date"></div>
         </div>
-        <p class="subtle chart-scroll-hint" id="chart-scroll-hint">Quarter groups run left to right. Bars within each quarter follow the selected quarter's CUSIP-keyed rank order. Scroll the chart horizontally on smaller screens.</p>
+        <p class="subtle chart-scroll-hint" id="chart-scroll-hint">Quarter groups run left to right. Within each quarter, present holdings run from highest to lowest exact percentage; "Not in top 10" gaps come last. CUSIP matching retains the selected quarter's comparison universe. Scroll the chart horizontally on smaller screens.</p>
       </figure>
       <div class="quarter-note" id="quarter-note"></div>
     </section>
@@ -213,6 +212,8 @@
     const pct = value => Number(value).toFixed(2) + "%";
     const label = item => "FY " + item.fiscal_year_end.slice(0, 4) + " Q" + item.fiscal_quarter;
     const identifiers = row => ["CUSIP: " + (row.cusip || "not reported"), "ISIN: " + (row.isin.join("; ") || "not reported")].join(" / ");
+    const tickerLabel = row => row.ticker.join("; ") || "not reported";
+    const accessibleIdentifiers = row => "Ticker: " + tickerLabel(row) + " / " + identifiers(row);
     const category = row => row.security_lending.is_cash_collateral === true ? "Securities-lending collateral" : row.asset_category === "STIV" ? "Cash-management vehicle" : "";
     const make = (tag, className, content) => {
       const node = document.createElement(tag);
@@ -271,6 +272,14 @@
       const matchFor = (row, entry) => row.cusip
         ? entry.active.top10.find(candidate => candidate.cusip === row.cusip)
         : entry.snapshot === item ? row : null;
+      const orderedRowsFor = entry => selectedRows
+        .map(row => ({ row, match: matchFor(row, entry) }))
+        .sort((left, right) => {
+          if (left.match && right.match) return left.match.rank - right.match.rank || left.row.rank - right.row.rank;
+          if (left.match) return -1;
+          if (right.match) return 1;
+          return left.row.rank - right.row.rank;
+        });
       const values = [];
       for (const row of selectedRows) {
         for (const entry of series) {
@@ -295,16 +304,15 @@
       }
       const chart = byId("quarter-detail");
       chart.style.setProperty("--quarter-count", series.length);
-      chart.setAttribute("aria-label", viewName + " grouped top-ten holdings comparison ending " + reported + ". " + comparison.length + " reported quarter groups run across the x-axis from oldest to selected. Each quarter group contains ten holding slots in the selected quarter's rank order, matched by CUSIP; exact percentages and missing top-ten appearances are shown as text.");
+      chart.setAttribute("aria-label", viewName + " grouped top-ten holdings comparison ending " + reported + ". " + comparison.length + " reported quarter groups run across the x-axis from oldest to selected. Each quarter group contains the selected quarter's ten CUSIP-matched holdings. Present holdings are ordered by that quarter's exact active-view rank from highest percentage to lowest, followed by missing top-ten appearances.");
       chart.replaceChildren();
       for (const entry of series) {
         const group = make("section", "quarter-group quarter-series-" + entry.index + (entry.selected ? " selected-quarter" : ""));
         group.dataset.reported = entry.snapshot.reported_as_of;
         group.setAttribute("role", "group");
-        group.setAttribute("aria-label", label(entry.snapshot) + " / " + entry.snapshot.reported_as_of + (entry.selected ? " / selected quarter" : "") + ". Ten holding slots follow the selected quarter's rank order and use CUSIP continuity.");
+        group.setAttribute("aria-label", label(entry.snapshot) + " / " + entry.snapshot.reported_as_of + (entry.selected ? " / selected quarter" : "") + ". Present CUSIP-matched holdings run from highest exact percentage to lowest in active-view rank order, followed by missing selected-universe slots.");
         const cluster = make("div", "bar-cluster");
-        for (const row of selectedRows) {
-          const match = matchFor(row, entry);
+        for (const { row, match } of orderedRowsFor(entry)) {
           const identity = match || row;
           const slot = make("div", "quarter-bar-slot quarter-series-" + entry.index + (entry.selected ? " selected-quarter" : ""));
           slot.dataset.reported = entry.snapshot.reported_as_of;
@@ -313,7 +321,7 @@
           slot.dataset.present = match ? "true" : "false";
           if (match) slot.dataset.quarterRank = match.rank;
           slot.setAttribute("role", "img");
-          slot.setAttribute("aria-label", "Selected-quarter slot #" + row.rank + ", " + identity.title + ". " + identifiers(identity) + ". " + label(entry.snapshot) + " / " + entry.snapshot.reported_as_of + ": " + (match ? pct(match.weight_pct) + " of net assets / active-view rank #" + match.rank : "Not in top 10") + (entry.selected ? " / selected quarter" : ""));
+          slot.setAttribute("aria-label", "Selected-quarter universe rank #" + row.rank + ", " + identity.title + ". " + accessibleIdentifiers(identity) + ". " + label(entry.snapshot) + " / " + entry.snapshot.reported_as_of + ": " + (match ? pct(match.weight_pct) + " of net assets / active-view rank #" + match.rank : "Not in top 10") + (entry.selected ? " / selected quarter" : ""));
           if (match) {
             slot.dataset.weightPct = match.weight_pct;
             slot.append(make("span", "quarter-bar-value", pct(match.weight_pct)));
@@ -332,22 +340,18 @@
           }
           const securityLabel = make("div", "security-label");
           const rankText = match
-            ? "#" + match.rank + " / " + match.asset_category + (!entry.selected && match.rank !== row.rank ? " / selected slot #" + row.rank : "")
-            : "Selected slot #" + row.rank;
+            ? "#" + match.rank + " / " + match.asset_category + (!entry.selected && match.rank !== row.rank ? " / selected universe #" + row.rank : "")
+            : "Selected universe #" + row.rank;
           securityLabel.append(make("div", "rank", rankText));
           securityLabel.append(make("div", "security-title", identity.title));
-          const metadata = make("div", "group-meta");
-          metadata.append(make("span", "", identity.ticker.length ? "Ticker: " + identity.ticker.join("; ") : "Ticker not reported"));
-          metadata.append(make("span", "", "CUSIP: " + (identity.cusip || "not reported")));
-          if (match && category(match)) metadata.append(make("span", "category", category(match)));
-          securityLabel.append(metadata);
-          securityLabel.append(make("span", "sr-only", (identity.title !== identity.name ? "Issuer: " + identity.name + ". " : "") + "ISIN: " + (identity.isin.join("; ") || "not reported") + "."));
+          if (match && category(match)) securityLabel.append(make("span", "category", category(match)));
+          securityLabel.append(make("span", "sr-only", (identity.title !== identity.name ? "Issuer: " + identity.name + ". " : "") + accessibleIdentifiers(identity) + "."));
           slot.append(securityLabel);
           cluster.append(slot);
         }
         const groupLabel = make("div", "quarter-label");
         groupLabel.append(make("div", "quarter-title", label(entry.snapshot) + " / " + entry.snapshot.reported_as_of + (entry.selected ? " (selected)" : "")));
-        groupLabel.append(make("div", "quarter-meta", "Ten CUSIP-matched slots in selected-quarter rank order"));
+        groupLabel.append(make("div", "quarter-meta", "Present weights high to low; missing selected-universe slots last"));
         group.append(cluster, groupLabel);
         chart.append(group);
       }
